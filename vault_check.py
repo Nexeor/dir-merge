@@ -133,10 +133,7 @@ def compare_dirs(base_dir, comp_dir):
             print("\tComp File:", comp_file_path)
 
             # Add files to comp_files for tracking duplicates and diff filepaths
-            if not comp_files.get(filename):
-                comp_files[filename] = [comp_file_path]
-            else:
-                comp_files[filename].append(comp_file_path)
+            comp_files.setdefault(filename, []).append(comp_file_path)
 
             # Check if base file with same path exists
             if not os.path.exists(base_file_path):
@@ -147,27 +144,35 @@ def compare_dirs(base_dir, comp_dir):
 
     # Go over all base files and check for duplicates
     for base_file in base_files:
-        # File appears twice in base
-        if base_files[base_file] and len(base_files[base_file]) > 1:
-            diff["DUPLICATE"].setdefault(base_file, base_files[base_file])
-
-        # File appears in both base and comp
-        if base_file in comp_files and len(comp_files[base_file]) > 0:
+        # File is duplicated across base and comp with different paths
+        if base_file in comp_files:
             base_paths = set(base_files[base_file])
-            print(base_paths)
             comp_paths = set(comp_files[base_file])
-            print(comp_paths)
 
             # Same file appears in base and comp with different paths
             if base_paths != comp_paths:
                 diff["DUPLICATE"].setdefault(base_file, []).extend(
+                    base_files[base_file]
+                )
+                diff["DUPLICATE"].setdefault(base_file, []).extend(
                     comp_files[base_file]
                 )
+        # File not in comp, but duplicated in base
+        elif len(base_files[base_file]) > 1:
+            diff["DUPLICATE"].setdefault(base_file, []).extend(base_files[base_file])
 
     # Go over comp files and check for duplicates
     for comp_file in comp_files:
         if comp_files[comp_file] and len(comp_files[comp_file]) > 1:
+            print("Files: ", comp_files[comp_file])
             diff["DUPLICATE"].setdefault(comp_file, []).extend(comp_files[comp_file])
+
+    # Print duplicates for logging
+    for dup in diff["DUPLICATE"]:
+        print(f"Duplicate found: {dup}")
+        for path in diff["DUPLICATE"][dup]:
+            print(f"\t{path}")
+        print()
 
     if not diff:
         print(f"No differences between base and local")
