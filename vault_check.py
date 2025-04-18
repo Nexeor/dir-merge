@@ -222,9 +222,17 @@ def main():
     dirB = DirIndex("dirB")
     dirA.index_dir(LOCAL_PATH)
     dirB.index_dir(REMOTE_PATH)
-
     logging.info(dirA)
     logging.info(dirB)
+
+    dirA_dup = dirA.find_self_duplicates()
+    logging.info(dirA_dup)
+
+    dirB_dup = dirB.find_self_duplicates()
+    logging.info(dirB_dup)
+
+    cross_dup = dirA.find_cross_duplicates(dirB)
+    logging.info(cross_dup)
 
 
 # Compare base_dir and new_dir and identify differences
