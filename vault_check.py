@@ -8,6 +8,7 @@ from datetime import datetime
 from urllib.parse import quote
 
 from log_config import setup_logging
+from index import DirIndex
 
 # The remote branch to be compared against
 BRANCH_NAME = "main"
@@ -27,30 +28,6 @@ def get_remote():
     subprocess.run(
         ["git", "clone", "-b", BRANCH_NAME, "--single-branch", REMOTE_URL, REMOTE_PATH]
     )
-
-
-def index_dir(dir_path):
-    # index = { Filename : [Filepaths] }
-    index = defaultdict(list)
-
-    # Go through base (Git) and compare to comp (local)
-    for dirpath, dirnames, filenames in os.walk(dir_path):
-        # Modify dirnames in place so os.walk doesn't traverse hidden dirs
-        dirnames[:] = [dir for dir in dirnames if dir not in IGNORE_DIRS]
-
-        # Get absolute path
-        abs_dir_path = os.path.normpath(os.path.abspath(dirpath))
-        logging.info(f"Indexing directory: {abs_dir_path}")
-
-        # Iterate over files for indexing
-        for filename in filenames:
-            file_path = os.path.join(abs_dir_path, filename)
-            logging.info(f"\tIndexing File: {file_path}")
-
-            # Add file to index
-            index[filename].append(file_path)
-
-    return index
 
 
 # Compare the modified directory to the remote copy
@@ -241,15 +218,13 @@ def make_link(path):
 
 def main():
     setup_logging(f"{OUTPUT_DIR_PATH}/log.txt")
-    dirA = index_dir(REMOTE_PATH)
-    dirB = index_dir(LOCAL_PATH)
-    logging.info("Index of Dir A:")
-    for file in dirA:
-        logging.info(f"{file}: {dirA[file]}")
+    dirA = DirIndex("dirA")
+    dirB = DirIndex("dirB")
+    dirA.index_dir(LOCAL_PATH)
+    dirB.index_dir(REMOTE_PATH)
 
-    logging.info("Index of Dir B:")
-    for file in dirB:
-        logging.info(f"{file}: {dirB[file]}")
+    logging.info(dirA)
+    logging.info(dirB)
 
 
 # Compare base_dir and new_dir and identify differences
