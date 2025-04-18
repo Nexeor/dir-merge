@@ -1,3 +1,5 @@
+import difflib
+import filecmp
 import os
 import logging
 
@@ -78,3 +80,26 @@ class DirIndex:
                 dne.index[file_name].extend(self.index[file_name])
 
         return dne
+
+    # Return an index containing the files that are "diff" across the self and other
+    # Diff: A file that appears in both indexes with the same name and relative path, but
+    # contain different content
+    def find_diff(self, other: "DirIndex"):
+        diff = DirIndex(name=f"diff_{self.name}_{other.name}")
+        for file_name in self.index:
+            for file_path in self.index[file_name]:
+                if file_path in other.index[file_name]:
+                    check_file_diff(file_path)
+
+
+def check_file_diff(file_path_A, file_path_B):
+    if not filecmp.cmp(file_path_A, file_path_B, shallow=False):
+        with open(file_path_A) as base:
+            base_content = base.readlines()
+        with open(file_path_B) as comp:
+            comp_content = comp.readlines()
+
+        diff_log = list(
+            difflib.unified_diff(base_content, comp_content, file_path_A, file_path_B)
+        )
+    return diff_log
