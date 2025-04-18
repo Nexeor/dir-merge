@@ -12,21 +12,21 @@ from index import DirIndex
 
 # The remote branch to be compared against
 BRANCH_NAME = "main"
-# Path to local vault
-LOCAL_PATH = r"C:\Users\trjji\Documents\Obsidian Vault"
 # URL to clone remote repo
 REMOTE_URL = "https://github.com/Nexeor/Notes.git"
-# Path to cloned repo
-REMOTE_PATH = "./temp_clone"
 # List of dirs to ignore
 IGNORE_DIRS = [".git", ".obsidian"]
 # Path to ouput dir
 OUTPUT_DIR_PATH = "./results"
+# Path to cloned repo
+PATH_A = r"C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\temp_clone"
+# Path to local vault
+PATH_B = r"C:\Users\trjji\Documents\Obsidian Vault"
 
 
 def get_remote():
     subprocess.run(
-        ["git", "clone", "-b", BRANCH_NAME, "--single-branch", REMOTE_URL, REMOTE_PATH]
+        ["git", "clone", "-b", BRANCH_NAME, "--single-branch", REMOTE_URL, PATH_A]
     )
 
 
@@ -198,12 +198,12 @@ def output_diff(diffs):
 
 
 def print_dir_tree():
-    for dirpath, dirnames, filenames in os.walk(REMOTE_PATH):
+    for dirpath, dirnames, filenames in os.walk(PATH_A):
         # Modify dirnames in place so os.walk doesn't traverse hidden dirs
         dirnames[:] = [dir for dir in dirnames if dir not in IGNORE_DIRS]
 
         # Calculate depth and print dir
-        depth = dirpath.replace(REMOTE_PATH, "").count(os.sep)
+        depth = dirpath.replace(PATH_A, "").count(os.sep)
         print(f"{"\t" * depth}{os.path.normpath(dirpath)}")
 
         # Print files in dir
@@ -216,12 +216,12 @@ def make_link(path):
     return f"\t{path}\n\t→ [Open](" + f"file:///{encoded_path})\n\n"
 
 
-def main():
+def indexing_method():
     setup_logging(f"{OUTPUT_DIR_PATH}/log.txt")
     dirA = DirIndex("dirA")
     dirB = DirIndex("dirB")
-    dirA.index_dir(LOCAL_PATH)
-    dirB.index_dir(REMOTE_PATH)
+    dirA.index_dir(PATH_B)
+    dirB.index_dir(PATH_A)
     logging.info(dirA)
     logging.info(dirB)
 
@@ -234,7 +234,18 @@ def main():
     cross_dup = dirA.find_cross_duplicates(dirB)
     logging.info(cross_dup)
 
+    dneA = dirA.find_DNE(dirB)
+    logging.info(dneA)
+    dneB = dirB.find_DNE(dirA)
+    logging.info(dneB)
+
+
+def old_method():
+    setup_logging(f"{OUTPUT_DIR_PATH}/log.txt")
+    diff = compare_dirs(PATH_A, PATH_B)
+    output_diff(diff)
+
 
 # Compare base_dir and new_dir and identify differences
 if __name__ == "__main__":
-    main()
+    indexing_method()

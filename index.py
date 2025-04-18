@@ -68,3 +68,13 @@ class DirIndex:
                 duplicates.index[file_name].extend(other.index[file_name])
 
         return duplicates
+
+    # Return an index containing the files that only exist in self
+    # DNE: A file with a unique name that is present in only one index
+    def find_DNE(self, other: "DirIndex"):
+        dne = DirIndex(name=f"dne_{self.name}_{other.name}")
+        for file_name in self.index:
+            if file_name not in other.index:
+                dne.index[file_name].extend(self.index[file_name])
+
+        return dne
