@@ -2,8 +2,11 @@ import filecmp
 import os
 import subprocess
 import difflib
+import logging
 from datetime import datetime
 from urllib.parse import quote
+
+from log_config import setup_logging
 
 # The remote branch to be compared against
 BRANCH_NAME = "main"
@@ -76,15 +79,15 @@ def compare_dirs(base_dir, comp_dir):
         # Ensure dir references (., ..) are not included in path
         if os.path.basename(dirpath) == os.path.basename(base_dir):
             abs_comp_dir_path = os.path.abspath(comp_dir)
-        print(f"Base dir: {abs_base_dir_path}")
-        print(f"Comp dir: {abs_comp_dir_path}")
+        logging.info(f"Base dir: {abs_base_dir_path}")
+        logging.info(f"Comp dir: {abs_comp_dir_path}")
 
         # Iterate over files in base dir and check against comp dir
         for filename in filenames:
             base_file_path = os.path.join(abs_base_dir_path, filename)
             comp_file_path = os.path.join(abs_comp_dir_path, filename)
-            print("\tBase File:", base_file_path)
-            print("\tComp File:", comp_file_path)
+            logging.info(f"\tBase File: {base_file_path}")
+            logging.info(f"\tComp File: {comp_file_path}")
 
             # Add files to base_files for tracking duplicates and diff filepaths
             if not base_files.get(filename):
@@ -95,7 +98,7 @@ def compare_dirs(base_dir, comp_dir):
             # Check if comp with same path exits
             if not os.path.exists(comp_file_path):
                 diff["DNE"]["unique_base"].append(base_file_path)
-                print(f"\tISSUE: Comp file DNE\n")
+                logging.info(f"\tISSUE: Comp file DNE\n")
             # Check if files with same path have same contents
             elif not filecmp.cmp(base_file_path, comp_file_path, shallow=False):
                 with open(base_file_path) as base:
@@ -109,9 +112,9 @@ def compare_dirs(base_dir, comp_dir):
                     )
                 )
                 diff["DIFF"].append(diff_log)
-                print(f"\tISSUE: File contents differ\n")
+                logging.info(f"\tISSUE: File contents differ\n")
             else:
-                print(f"\tMATCH\n")
+                logging.info(f"\tMATCH\n")
 
     # Go through comp dirs and compare to base dirs
     for dirpath, dirnames, filenames in os.walk(comp_dir):
@@ -123,14 +126,14 @@ def compare_dirs(base_dir, comp_dir):
         abs_base_dir_path = os.path.abspath(
             os.path.join(base_dir, os.path.basename(dirpath))
         )
-        print(f"Base dir: {abs_base_dir_path}")
-        print(f"Comp dir: {abs_comp_dir_path}")
+        logging.info(f"Base dir: {abs_base_dir_path}")
+        logging.info(f"Comp dir: {abs_comp_dir_path}")
 
         for filename in filenames:
             comp_file_path = os.path.join(abs_comp_dir_path, filename)
             base_file_path = os.path.join(abs_base_dir_path, filename)
-            print("\tBase File:", base_file_path)
-            print("\tComp File:", comp_file_path)
+            logging.info(f"\tBase File: {base_file_path}")
+            logging.info(f"\tComp File: {comp_file_path}")
 
             # Add files to comp_files for tracking duplicates and diff filepaths
             comp_files.setdefault(filename, []).append(comp_file_path)
@@ -138,9 +141,9 @@ def compare_dirs(base_dir, comp_dir):
             # Check if base file with same path exists
             if not os.path.exists(base_file_path):
                 diff["DNE"]["unique_local"].append(comp_file_path)
-                print(f"\tISSUE: Base file DNE\n")
+                logging.info(f"\tISSUE: Base file DNE\n")
             else:
-                print(f"\tMATCH\n")
+                logging.info(f"\tMATCH\n")
 
     # Go over all base files and check for duplicates
     for base_file in base_files:
@@ -164,24 +167,23 @@ def compare_dirs(base_dir, comp_dir):
     # Go over comp files and check for duplicates
     for comp_file in comp_files:
         if comp_files[comp_file] and len(comp_files[comp_file]) > 1:
-            print("Files: ", comp_files[comp_file])
             diff["DUPLICATE"].setdefault(comp_file, []).extend(comp_files[comp_file])
 
     # Print duplicates for logging
     for dup in diff["DUPLICATE"]:
-        print(f"Duplicate found: {dup}")
+        logging.info(f"Duplicate found: {dup}")
         for path in diff["DUPLICATE"][dup]:
-            print(f"\t{path}")
-        print()
+            logging.info(f"\t{path}")
+        logging.info("\n")
 
     if not diff:
-        print(f"No differences between base and local")
+        logging.info(f"No differences between base and local")
 
     return diff
 
 
 def print_diff(diffs):
-    # Create unique file for DNE
+    # Create unique files using timestamp
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     with open(
         f"{OUTPUT_DIR_PATH}/missing/MISSING-{timestamp}.txt", "w", encoding="utf-8"
@@ -213,6 +215,7 @@ def make_link(path):
 
 
 def main():
+    setup_logging(f"{OUTPUT_DIR_PATH}/log.txt")
     diff = compare_dirs(REMOTE_PATH, LOCAL_PATH)
     print_diff(diff)
 
