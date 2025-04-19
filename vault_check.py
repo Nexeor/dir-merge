@@ -239,6 +239,9 @@ def indexing_method():
     dneB = dirB.find_DNE(dirA)
     logging.info(dneB)
 
+    cross_dif = dirA.find_diff(dirB)
+    logging.info(cross_dif)
+
 
 def old_method():
     setup_logging(f"{OUTPUT_DIR_PATH}/log.txt")

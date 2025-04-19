@@ -85,11 +85,22 @@ class DirIndex:
     # Diff: A file that appears in both indexes with the same name and relative path, but
     # contain different content
     def find_diff(self, other: "DirIndex"):
-        diff = DirIndex(name=f"diff_{self.name}_{other.name}")
-        for file_name in self.index:
-            for file_path in self.index[file_name]:
-                if file_path in other.index[file_name]:
-                    check_file_diff(file_path)
+        # Combine the two indexes
+        combined = defaultdict(list)
+        for elem in (self, other):
+            for file_name, file_paths in elem.index.items():
+                if file_name not in combined:
+                    combined[file_name] = []
+                combined[file_name].extend(file_paths)
+
+        # Check for differences
+        for file_name, file_paths in combined.items():
+            for path in file_paths:
+                # NEED TO GET RELATIVE PATH HERE
+                if path in other.index[file_name]:
+                    check_file_diff(path)
+
+        return DirIndex(name=f"diff_{self.name}_{other.name}", index=combined)
 
 
 def check_file_diff(file_path_A, file_path_B):
