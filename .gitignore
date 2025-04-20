@@ -1,5 +1,5 @@
 results/
 temp_clone/
+__pycache__/
 diff.txt
 out.txt
-__pycache__/log_config.cpython-313.pyc

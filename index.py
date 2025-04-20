@@ -3,8 +3,14 @@ import filecmp
 import os
 import logging
 
+from pathlib import Path
 from collections import defaultdict
 from typing import Dict, List
+
+# Path to cloned repo
+PATH_A = r"C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\temp_clone"
+# Path to local vault
+PATH_B = r"C:\Users\trjji\Documents\Obsidian Vault"
 
 
 class DirIndex:
@@ -85,7 +91,9 @@ class DirIndex:
     # Diff: A file that appears in both indexes with the same name and relative path, but
     # contain different content
     def find_diff(self, other: "DirIndex"):
-        # Combine the two indexes
+        diff_logs = defaultdict(list)
+
+        # Combine the two indexes into one
         combined = defaultdict(list)
         for elem in (self, other):
             for file_name, file_paths in elem.index.items():
@@ -93,17 +101,45 @@ class DirIndex:
                     combined[file_name] = []
                 combined[file_name].extend(file_paths)
 
-        # Check for differences
+        # Regroup index by matching relative path, { relpath : [abs_paths] }
+        same_rel_paths = defaultdict(list)
         for file_name, file_paths in combined.items():
             for path in file_paths:
-                # NEED TO GET RELATIVE PATH HERE
-                if path in other.index[file_name]:
-                    check_file_diff(path)
+                try:
+                    relative_path = get_relative_to_base_path(path)
+                    same_rel_paths[relative_path].append(path)
+                except ValueError as e:
+                    print(e)
+                    logging.error(e)
+                    same_rel_paths["<unmatched>"].append(path)
 
-        return DirIndex(name=f"diff_{self.name}_{other.name}", index=combined)
+        # Check matching relative paths for file equality
+        for rel_path, abs_paths in same_rel_paths.items():
+            for i, abs_path_A in enumerate(abs_paths):
+                for abs_path_B in abs_paths[i + 1 :]:
+                    diff_log = check_file_diff(abs_path_A, abs_path_B)
+
+                    if diff_log:
+                        diff_logs[rel_path].append(diff_log)
+
+        return DirIndex(name=f"diff_{self.name}_{other.name}", index=diff_logs)
+
+
+# Match given path to a base path and extract the relative path
+def get_relative_to_base_path(full_path):
+    path = Path(full_path)
+
+    for base in [PATH_A, PATH_B]:
+        if path.is_relative_to(base):
+            return path.relative_to(base)
+
+    raise ValueError(
+        f"The path {full_path} is not relative to any of the defined base paths."
+    )
 
 
 def check_file_diff(file_path_A, file_path_B):
+    diff_log = None
     if not filecmp.cmp(file_path_A, file_path_B, shallow=False):
         with open(file_path_A) as base:
             base_content = base.readlines()
