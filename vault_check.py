@@ -216,6 +216,19 @@ def make_link(path):
     return f"\t{path}\n\t→ [Open](" + f"file:///{encoded_path})\n\n"
 
 
+def test():
+    setup_logging(f"{OUTPUT_DIR_PATH}/log.txt")
+    dirA = DirIndex("dirA")
+    dirB = DirIndex("dirB")
+    dirA.index_dir(PATH_A)
+    dirB.index_dir(PATH_B)
+
+    compare = dirA.compare_to(dirB)
+    logging.info(compare["DUP"])
+    logging.info(compare["DNE"])
+    logging.info(compare["DIFF"])
+
+
 def indexing_method():
     setup_logging(f"{OUTPUT_DIR_PATH}/log.txt")
     dirA = DirIndex("dirA")
@@ -251,4 +264,4 @@ def old_method():
 
 # Compare base_dir and new_dir and identify differences
 if __name__ == "__main__":
-    indexing_method()
+    test()

@@ -52,9 +52,21 @@ class DirIndex:
 
         return self.index
 
-    # Given two index objects, do a full comparison
-    def compare_to(self, other):
-        return True
+    # Compare this index object to the other. Return a dict containing the
+    # duplicates, dne's, and diff files
+    def compare_to(self, other: "DirIndex"):
+        self_dup = self.find_self_duplicates()
+        other_dup = other.find_self_duplicates()
+        cross_dup = self.find_cross_duplicates(other_dup)
+        combined_dup = self_dup.__combine_dir_index([other_dup, cross_dup])
+
+        self_dne = self.find_DNE(other)
+        other_dne = other.find_DNE(self)
+        combined_dne = self_dne.__combine_dir_index(other_dne)
+
+        diff = self.find_diff(other)
+
+        return {"DUP": combined_dup, "DNE": combined_dne, "DIFF": diff}
 
     # Return an index of all duplicates within this index
     # Duplicate: A file with the same name as another, but a different path
@@ -93,17 +105,11 @@ class DirIndex:
     def find_diff(self, other: "DirIndex"):
         diff_logs = defaultdict(list)
 
-        # Combine the two indexes into one
-        combined = defaultdict(list)
-        for elem in (self, other):
-            for file_name, file_paths in elem.index.items():
-                if file_name not in combined:
-                    combined[file_name] = []
-                combined[file_name].extend(file_paths)
+        combined = self.__combine_dir_index(other)
 
         # Regroup index by matching relative path, { relpath : [abs_paths] }
         same_rel_paths = defaultdict(list)
-        for file_name, file_paths in combined.items():
+        for file_name, file_paths in combined.index.items():
             for path in file_paths:
                 try:
                     relative_path = get_relative_to_base_path(path)
@@ -124,6 +130,30 @@ class DirIndex:
 
         return DirIndex(name=f"diff_{self.name}_{other.name}", index=diff_logs)
 
+    # Pass a list of DirIndexes to combine with self
+    def __combine_dir_index(self, others: List["DirIndex"]):
+        # Transform single DirIndex input into a list
+        if not isinstance(others, list):
+            others = [others]
+        dir_indexes: List["DirIndex"] = [self, *others]
+
+        # Combine the indexes
+        combined = defaultdict(list)
+        for dir_index in dir_indexes:
+            for file_name, file_paths in dir_index.index.items():
+                if file_name not in combined:
+                    combined[file_name] = []
+                combined[file_name].extend(file_paths)
+
+        # Build a combined name
+        combined_name = "combined_"
+        for dir_index in dir_indexes:
+            combined_name += f"_{dir_index.name}"
+            print("Index name:", dir_index.name)
+            print(combined_name)
+
+        return DirIndex(name=combined_name, index=combined)
+
 
 # Match given path to a base path and extract the relative path
 def get_relative_to_base_path(full_path):
@@ -138,6 +168,7 @@ def get_relative_to_base_path(full_path):
     )
 
 
+# Given two file paths, check if they contain the same content
 def check_file_diff(file_path_A, file_path_B):
     diff_log = None
     if not filecmp.cmp(file_path_A, file_path_B, shallow=False):
