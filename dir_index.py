@@ -1,11 +1,11 @@
-import difflib
-import filecmp
 import os
 import logging
 
 from pathlib import Path
 from collections import defaultdict
-from typing import Dict, List
+from typing import List
+
+from utils import get_relative_to_base_path, check_file_diff
 
 # Path to cloned repo
 PATH_A = r"C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\temp_clone"
@@ -149,35 +149,5 @@ class DirIndex:
         combined_name = "combined_"
         for dir_index in dir_indexes:
             combined_name += f"_{dir_index.name}"
-            print("Index name:", dir_index.name)
-            print(combined_name)
 
         return DirIndex(name=combined_name, index=combined)
-
-
-# Match given path to a base path and extract the relative path
-def get_relative_to_base_path(full_path):
-    path = Path(full_path)
-
-    for base in [PATH_A, PATH_B]:
-        if path.is_relative_to(base):
-            return path.relative_to(base)
-
-    raise ValueError(
-        f"The path {full_path} is not relative to any of the defined base paths."
-    )
-
-
-# Given two file paths, check if they contain the same content
-def check_file_diff(file_path_A, file_path_B):
-    diff_log = None
-    if not filecmp.cmp(file_path_A, file_path_B, shallow=False):
-        with open(file_path_A) as base:
-            base_content = base.readlines()
-        with open(file_path_B) as comp:
-            comp_content = comp.readlines()
-
-        diff_log = list(
-            difflib.unified_diff(base_content, comp_content, file_path_A, file_path_B)
-        )
-    return diff_log
