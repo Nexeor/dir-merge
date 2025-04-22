@@ -1,5 +1,3 @@
-import logging
-
 from log_config import setup_logging
 from utils import write_compare_to_file
 from dir_index import DirIndex
