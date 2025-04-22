@@ -51,9 +51,10 @@ def write_compare_to_file(compare):
                 file.write(make_link(path))
 
     with open(f"{OUTPUT_DIR_PATH}/diff/DIFF-{timestamp}.txt", "w") as file:
-        diff_index: DirIndex = compare["DIFF"]
+        diff_index: Dict = compare["DIFF"]
         # print(diff_index)
-        for _, diffs in diff_index.index.items():
+
+        for _, diffs in diff_index.items():
             for diff in diffs:
                 file.writelines(diff)
 
@@ -64,6 +65,15 @@ def write_compare_to_file(compare):
         for dup_name, dup_paths in dup_index.index.items():
             file.write(f"{dup_name}\n")
             for path in dup_paths:
+                file.write(make_link(path))
+
+    with open(
+        f"{OUTPUT_DIR_PATH}/matches/MATCH-{timestamp}.txt", "w", encoding="utf-8"
+    ) as file:
+        match_index: Dict = compare["MATCH"]
+        for match_name, match_paths in match_index.items():
+            file.write(f"{match_name}\n")
+            for path in match_paths:
                 file.write(make_link(path))
 
 

@@ -64,9 +64,8 @@ class DirIndex:
         other_dne = other.find_DNE(self)
         combined_dne = self_dne.__combine_dir_index(other_dne)
 
-        diff = self.find_diff(other)
-
-        return {"DUP": combined_dup, "DNE": combined_dne, "DIFF": diff}
+        diff, match = self.find_diff(other)
+        return {"DUP": combined_dup, "DNE": combined_dne, "DIFF": diff, "MATCH": match}
 
     # Return an index of all duplicates within this index
     # Duplicate: A file with the same name as another, but a different path
@@ -120,15 +119,18 @@ class DirIndex:
                     same_rel_paths["<unmatched>"].append(path)
 
         # Check matching relative paths for file equality
+        matches = defaultdict(list)
         for rel_path, abs_paths in same_rel_paths.items():
             for i, abs_path_A in enumerate(abs_paths):
                 for abs_path_B in abs_paths[i + 1 :]:
                     diff_log = check_file_diff(abs_path_A, abs_path_B)
+                    file_name = Path(abs_path_A).name
 
                     if diff_log:
                         diff_logs[rel_path].append(diff_log)
-
-        return DirIndex(name=f"diff_{self.name}_{other.name}", index=diff_logs)
+                    else:
+                        matches[file_name].extend((abs_path_A, abs_path_B))
+        return (diff_logs, matches)
 
     # Pass a list of DirIndexes to combine with self
     def __combine_dir_index(self, others: List["DirIndex"]):
