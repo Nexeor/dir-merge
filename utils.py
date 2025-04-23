@@ -80,3 +80,7 @@ def write_compare_to_file(compare):
 def make_link(path):
     encoded_path = quote(path.replace("\\", "/"))
     return f"file:///{encoded_path}"
+
+
+def get_timestamp():
+    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

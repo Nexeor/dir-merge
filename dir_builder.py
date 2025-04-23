@@ -27,6 +27,8 @@ class UnionBuilder:
         root_path = self.__setup_root()
         self.union_path = root_path
 
+    # Add files with matching content to union
+    # TODO: Unionbuilder only MATCHES files with same relative path, so choosing between path here never matters
     def add_matches(self, match_index: Dict[str, List[str]]):
         for _, abs_paths in match_index.items():
             # Generate relative paths
