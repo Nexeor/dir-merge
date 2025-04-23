@@ -79,4 +79,4 @@ def write_compare_to_file(compare):
 
 def make_link(path):
     encoded_path = quote(path.replace("\\", "/"))
-    return f"\t{path}\n\t→ [Open](" + f"file:///{encoded_path})\n\n"
+    return f"file:///{encoded_path}"

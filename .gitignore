@@ -1,5 +1,6 @@
-results/
-temp_clone/
 __pycache__/
+combined/
+temp_clone/
+results/
 diff.txt
 out.txt
