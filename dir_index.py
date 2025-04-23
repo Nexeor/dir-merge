@@ -130,6 +130,7 @@ class DirIndex:
                         diff_logs[rel_path].append(diff_log)
                     else:
                         matches[file_name].extend((abs_path_A, abs_path_B))
+
         return (diff_logs, matches)
 
     # Pass a list of DirIndexes to combine with self

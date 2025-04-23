@@ -28,7 +28,7 @@ def parse_args():
 
 
 def build_index():
-    setup_logging(f"{OUTPUT_DIR_PATH}/log.txt")
+    setup_logging()
     dirA = DirIndex("dirA")
     dirB = DirIndex("dirB")
     dirA.index_dir(PATH_A)
@@ -39,7 +39,7 @@ def build_index():
 
 
 def build_union():
-    setup_logging(f"{OUTPUT_DIR_PATH}/log.txt")
+    setup_logging()
     dirA = DirIndex("dirA")
     dirB = DirIndex("dirB")
     dirA.index_dir(PATH_A)
