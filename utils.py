@@ -84,3 +84,11 @@ def make_link(path):
 
 def get_timestamp():
     return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+
+# Returns True if any part of the given path is a hidden file (prefixed with '.')
+def is_hidden(path: Path):
+    for elem in path.parts:
+        if elem[0] == ".":
+            return True
+    return False

@@ -5,7 +5,8 @@ from pathlib import Path
 from collections import defaultdict
 from typing import List
 
-from utils import get_relative_to_base_path, check_file_diff
+import utils
+from file import File
 
 # Path to cloned repo
 PATH_A = r"C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\temp_clone"
@@ -14,15 +15,11 @@ PATH_B = r"C:\Users\trjji\Documents\Obsidian Vault"
 
 
 class DirIndex:
-    def __init__(self, name, index=None):
+    def __init__(self, name, name_index=None, path_index=None):
         self.name = name
         self.logger = logging.getLogger(__name__)
-
-        # index = { Filename : [Filepaths] }
-        if index:
-            self.index = index
-        else:
-            self.index = defaultdict(list)
+        self.name_index = self.__create__index(name_index)
+        self.path_index = self.__create__index(path_index)
 
     def __str__(self):
         msg = [f"Index: {self.name}\n"]
@@ -33,24 +30,20 @@ class DirIndex:
         return "".join(msg)
 
     # Add all files in the given directory to the index and return the dict
-    def index_dir(self, dir_path):
-        for dirpath, dirnames, filenames in os.walk(dir_path):
-            # Modify dirnames in place so os.walk doesn't traverse hidden dirs
-            dirnames[:] = [dir for dir in dirnames if dir[0] != "."]
-
-            # Get absolute path
-            abs_dir_path = os.path.normpath(os.path.abspath(dirpath))
-            self.logger.info(f"Indexing directory: {abs_dir_path}")
-
-            # Iterate over files for indexing
-            for filename in filenames:
-                file_path = os.path.join(abs_dir_path, filename)
-                self.logger.info(f"\tIndexing File: {file_path}")
-
-                # Add file to index
-                self.index[filename].append(file_path)
-
-        return self.index
+    def index_dir(self, base_dir_path):
+        # Recursively iterate over filetree and add to index
+        base_dir_path = Path(base_dir_path)
+        for abs_path in base_dir_path.rglob("*"):
+            if not utils.is_hidden(abs_path):
+                if abs_path.is_file():
+                    self.logger.info(
+                        f"Indexing file: \n\tName: {abs_path.name}\n\tPath: {abs_path}"
+                    )
+                    file = File(abs_path.name, abs_path.parent)
+                    self.name_index[file.name] = file
+                    self.path_index[file.path] = file
+                elif abs_path.is_dir():
+                    self.logger.info(f"Indexing directory: {abs_path}")
 
     # Compare this index object to the other. Return a dict containing the
     # duplicates, dne's, and diff files
@@ -111,7 +104,7 @@ class DirIndex:
         for file_name, file_paths in combined.index.items():
             for path in file_paths:
                 try:
-                    relative_path = get_relative_to_base_path(path)
+                    relative_path = utils.get_relative_to_base_path(path)
                     same_rel_paths[relative_path].append(path)
                 except ValueError as e:
                     print(e)
@@ -123,7 +116,7 @@ class DirIndex:
         for rel_path, abs_paths in same_rel_paths.items():
             for i, abs_path_A in enumerate(abs_paths):
                 for abs_path_B in abs_paths[i + 1 :]:
-                    diff_log = check_file_diff(abs_path_A, abs_path_B)
+                    diff_log = utils.check_file_diff(abs_path_A, abs_path_B)
                     file_name = Path(abs_path_A).name
 
                     if diff_log:
@@ -132,6 +125,12 @@ class DirIndex:
                         matches[file_name].extend((abs_path_A, abs_path_B))
 
         return (diff_logs, matches)
+
+    def __create__index(index):
+        if index:
+            return index
+        else:
+            return defaultdict(list)
 
     # Pass a list of DirIndexes to combine with self
     def __combine_dir_index(self, others: List["DirIndex"]):

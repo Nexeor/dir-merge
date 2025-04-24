@@ -3,7 +3,7 @@ import argparse
 from log_config import setup_logging
 from utils import write_compare_to_file
 from dir_index import DirIndex
-from dir_builder import UnionBuilder
+from union_builder import UnionBuilder
 
 from config import PATH_A, PATH_B, OUTPUT_DIR_PATH
 
@@ -34,8 +34,10 @@ def build_index():
     dirA.index_dir(PATH_A)
     dirB.index_dir(PATH_B)
 
+    """
     compare = dirA.compare_to(dirB)
     write_compare_to_file(compare)
+    """
 
 
 def build_union():
