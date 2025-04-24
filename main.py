@@ -1,15 +1,19 @@
 import argparse
+import sys
+from pathlib import Path
+from typing import List
+
+import utils
+import config
 
 from log_config import setup_logging
-from utils import write_compare_to_file
 from dir_index import DirIndex
 from union_builder import UnionBuilder
 
-from config import PATH_A, PATH_B, OUTPUT_DIR_PATH
-
 
 def main():
-    setup_logging
+    setup_dirs()
+    setup_logging()
     args = parse_args()
     if args.index:
         build_index()
@@ -17,6 +21,34 @@ def main():
         build_union()
     else:
         build_union()
+
+
+# Ensure that the output directories exist
+def setup_dirs():
+    input_paths: List[Path] = [
+        config.PATH_A,
+        config.PATH_B,
+    ]
+
+    output_paths = [
+        config.OUTPUT_DIR_PATH,
+        config.MISSING_PATH,
+        config.DIFF_PATH,
+        config.DUP_PATH,
+        config.MATCH_PATH,
+    ]
+
+    # Check that input directories are present
+    for path in input_paths:
+        try:
+            utils.ensure_path_exists(path, create_if_missing=False)
+        except FileNotFoundError as e:
+            print(e)
+            sys.exit(0)
+
+    # Create output dirs
+    for path in output_paths:
+        utils.ensure_path_exists(path)
 
 
 def parse_args():
@@ -31,8 +63,8 @@ def build_index():
     setup_logging()
     dirA = DirIndex("dirA")
     dirB = DirIndex("dirB")
-    dirA.index_dir(PATH_A)
-    dirB.index_dir(PATH_B)
+    dirA.index_dir(config.PATH_A)
+    dirB.index_dir(config.PATH_B)
 
     """
     compare = dirA.compare_to(dirB)

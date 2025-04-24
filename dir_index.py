@@ -3,23 +3,19 @@ import logging
 
 from pathlib import Path
 from collections import defaultdict
-from typing import List
+from typing import List, Dict
 
 import utils
 from file import File
 
-# Path to cloned repo
-PATH_A = r"C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\temp_clone"
-# Path to local vault
-PATH_B = r"C:\Users\trjji\Documents\Obsidian Vault"
-
 
 class DirIndex:
-    def __init__(self, name, name_index=None, path_index=None):
+    def __init__(self, name, name_index=None, path_index=None, size_index=None):
         self.name = name
         self.logger = logging.getLogger(__name__)
-        self.name_index = self.__create__index(name_index)
-        self.path_index = self.__create__index(path_index)
+        self.name_index: Dict[str : List[File]] = name_index or defaultdict(list)
+        self.path_index: Dict[str : List[File]] = path_index or defaultdict(list)
+        self.size_index: Dict[int : List[File]] = size_index or defaultdict(list)
 
     def __str__(self):
         msg = [f"Index: {self.name}\n"]
@@ -29,7 +25,7 @@ class DirIndex:
                 msg.append(f"\t{file_path}\n")
         return "".join(msg)
 
-    # Add all files in the given directory to the index and return the dict
+    # Add all files in the given dire ctory to the index and return the dict
     def index_dir(self, base_dir_path):
         # Recursively iterate over filetree and add to index
         base_dir_path = Path(base_dir_path)
@@ -39,9 +35,10 @@ class DirIndex:
                     self.logger.info(
                         f"Indexing file: \n\tName: {abs_path.name}\n\tPath: {abs_path}"
                     )
-                    file = File(abs_path.name, abs_path.parent)
-                    self.name_index[file.name] = file
-                    self.path_index[file.path] = file
+                    file = File(abs_path)
+                    self.name_index[file.name].append(file)
+                    self.path_index[file.path].append(file)
+                    self.size_index[file.size].append(file)
                 elif abs_path.is_dir():
                     self.logger.info(f"Indexing directory: {abs_path}")
 
@@ -125,12 +122,6 @@ class DirIndex:
                         matches[file_name].extend((abs_path_A, abs_path_B))
 
         return (diff_logs, matches)
-
-    def __create__index(index):
-        if index:
-            return index
-        else:
-            return defaultdict(list)
 
     # Pass a list of DirIndexes to combine with self
     def __combine_dir_index(self, others: List["DirIndex"]):

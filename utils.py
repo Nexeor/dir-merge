@@ -92,3 +92,16 @@ def is_hidden(path: Path):
         if elem[0] == ".":
             return True
     return False
+
+
+# Check if the provided path exists. If it does, return it.
+# If build is true, create the dir if it doesn't exist
+# Otherwise, raise FnF exception
+def ensure_path_exists(path: Path, create_if_missing=True):
+    if path.exists():
+        return path
+    if create_if_missing:
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+    else:
+        raise FileNotFoundError(f"Path does not exist: {path}")
