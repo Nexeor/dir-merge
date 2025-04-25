@@ -1,6 +1,6 @@
 __pycache__/
 combined/
 temp_clone/
-results/
+.results/
 diff.txt
 out.txt

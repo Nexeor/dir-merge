@@ -40,6 +40,7 @@ def setup_dirs():
 
     # Check that input directories are present
     for path in input_paths:
+        print(path)
         try:
             utils.ensure_path_exists(path, create_if_missing=False)
         except FileNotFoundError as e:
@@ -65,7 +66,7 @@ def build_index():
     dirB = DirIndex("dirB")
     dirA.index_dir(config.PATH_A)
     dirB.index_dir(config.PATH_B)
-
+    dirA.find_compare()
     """
     compare = dirA.compare_to(dirB)
     write_compare_to_file(compare)

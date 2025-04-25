@@ -42,6 +42,24 @@ class DirIndex:
                 elif abs_path.is_dir():
                     self.logger.info(f"Indexing directory: {abs_path}")
 
+    # Scan all of the files in the index for matches
+    def find_matches(self):
+        for filename, files in self.name_index.items():
+            for file in files:
+                print(file)
+
+    def find_compare(self):
+        for filename, files in self.name_index.items():
+            print(f"{filename} : {files}")
+            # Other files with same name exist
+            if len(files) > 1:
+                for i, file in enumerate(files):
+                    for file in files[i + 1 :]:
+                        print(f"\t{file}")
+            # Name is unique
+            else:
+                print(f"\t{file}")
+
     # Compare this index object to the other. Return a dict containing the
     # duplicates, dne's, and diff files
     def compare_to(self, other: "DirIndex"):
