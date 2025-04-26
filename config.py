@@ -1,9 +1,11 @@
 from pathlib import Path
 
 # Path to cloned repo
-PATH_A = Path("C:/Users/trjji/Code/obsidian-helpers/temp_clone")
+PATH_A = Path("C:/Users/trjji/Documents/Coding Projects/obsidian-helpers/temp_clone")
+# PATH_A = Path("C:/Users/trjji/Code/obsidian-helpers/temp_clone")
 # Path to local vault
-PATH_B = Path("C:/Users/trjji/OneDrive/Documents/The Hivemind")
+PATH_B = Path("C:/Users/trjji/Documents/Obsidian Vault")
+# PATH_B = Path("C:/Users/trjji/OneDrive/Documents/The Hivemind")
 # Path to ouput dir
 OUTPUT_DIR_PATH = Path("./.results")
 

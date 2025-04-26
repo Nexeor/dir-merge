@@ -7,15 +7,24 @@ from typing import List, Dict
 
 import utils
 from file import File
+from comparison_result import ComparisonResult
 
 
 class DirIndex:
     def __init__(self, name, name_index=None, path_index=None, size_index=None):
         self.name = name
         self.logger = logging.getLogger(__name__)
+
+        self.all_files: List[File] = []
         self.name_index: Dict[str : List[File]] = name_index or defaultdict(list)
         self.path_index: Dict[str : List[File]] = path_index or defaultdict(list)
         self.size_index: Dict[int : List[File]] = size_index or defaultdict(list)
+
+        self.matches: Dict[str : List[File]]  # { filename : List[Files]}
+        self.diff: Dict[str : List[File]]  # { filename : List[Files]}
+        self.content_name_dup: Dict[
+            (str, str) : List[File]
+        ]  # { (filename, hash) : List[Files]}
 
     def __str__(self):
         msg = [f"Index: {self.name}\n"]
@@ -25,7 +34,7 @@ class DirIndex:
                 msg.append(f"\t{file_path}\n")
         return "".join(msg)
 
-    # Add all files in the given dire ctory to the index and return the dict
+    # Add all files in the given directory to this index
     def index_dir(self, base_dir_path):
         # Recursively iterate over filetree and add to index
         base_dir_path = Path(base_dir_path)
@@ -36,8 +45,9 @@ class DirIndex:
                         f"Indexing file: \n\tName: {abs_path.name}\n\tPath: {abs_path}"
                     )
                     file = File(abs_path)
+                    self.all_files.append(file)
                     self.name_index[file.name].append(file)
-                    self.path_index[file.path].append(file)
+                    self.path_index[file.dir_path].append(file)
                     self.size_index[file.size].append(file)
                 elif abs_path.is_dir():
                     self.logger.info(f"Indexing directory: {abs_path}")
@@ -48,17 +58,56 @@ class DirIndex:
             for file in files:
                 print(file)
 
+    # Get list of all files in index
+    # Check that file against all files that share a name:
+    #   Match, Diff, Content-Name-Dup, Name-Dup
+    #   Cache comparisons as we go to not redo the same compare
+    # Check that file against all files that share size:
+    #   Content-Path-Dup, Content-Dup
+    # If no other comparison is found yet, then the file is unique
     def find_compare(self):
-        for filename, files in self.name_index.items():
-            print(f"{filename} : {files}")
-            # Other files with same name exist
-            if len(files) > 1:
-                for i, file in enumerate(files):
-                    for file in files[i + 1 :]:
-                        print(f"\t{file}")
-            # Name is unique
-            else:
-                print(f"\t{file}")
+        for file in self.all_files():
+            file: File
+
+            # Test against other files with the same name
+            same_name_files = self.name_index[file.name]
+            if len(same_name_files) > 1:
+                for i, file_a in enumerate(same_name_files):
+                    for file_b in same_name_files[i + 1 :]:
+                        file_a: File
+                        comparison = file_a.compare_to(file_b)
+
+                        match comparison:
+                            case ComparisonResult.MATCH:
+                                self.matches[file_a.name].append(file_a)
+                            case ComparisonResult.DIFF:
+                                print("Diff!")
+                            case ComparisonResult.CONTENT_NAME_DUP:
+                                print("Content-name dup")
+                            case ComparisonResult.NAME_DUP:
+                                print("Name dup")
+                            case _:
+                                raise ValueError(
+                                    f"Illegal compare returned for name comparison: {comparison}"
+                                )
+
+            # Test against other files with the same size
+            same_size_files = self.size_index[file.size]
+            if len(same_size_files) > 1:
+                for i, file_a in enumerate(same_size_files):
+                    for file_b in same_size_files[i + 1 :]:
+                        file_b: File
+                        comparison = file_a.compare_to(file_b)
+
+                        match comparison:
+                            case ComparisonResult.CONTENT_PATH_DUP:
+                                return "Content-pathdup"
+                            case ComparisonResult.CONTENT_DUP:
+                                return "Content-dup"
+                            case _:
+                                raise ValueError(
+                                    f"Illegal compare returned for name comparison: {comparison}"
+                                )
 
     # Compare this index object to the other. Return a dict containing the
     # duplicates, dne's, and diff files
