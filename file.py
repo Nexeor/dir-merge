@@ -5,8 +5,9 @@ from comparison_result import ComparisonResult
 
 
 class File:
-    def __init__(self, abs_path: Path):
+    def __init__(self, base_path: Path, abs_path: Path):
         self.name = abs_path.name
+        self.rel_path = abs_path.relative_to(base_path)
         self.dir_path = abs_path.parent
         self.abs_path = abs_path
         self.size = abs_path.stat().st_size

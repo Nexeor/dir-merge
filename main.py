@@ -30,14 +30,6 @@ def setup_dirs():
         config.PATH_B,
     ]
 
-    output_paths = [
-        config.OUTPUT_DIR_PATH,
-        config.MISSING_PATH,
-        config.DIFF_PATH,
-        config.DUP_PATH,
-        config.MATCH_PATH,
-    ]
-
     # Check that input directories are present
     for path in input_paths:
         print(path)
@@ -46,10 +38,6 @@ def setup_dirs():
         except FileNotFoundError as e:
             print(e)
             sys.exit(0)
-
-    # Create output dirs
-    for path in output_paths:
-        utils.ensure_path_exists(path)
 
 
 def parse_args():
@@ -67,6 +55,7 @@ def build_index():
     dirA.index_dir(config.PATH_A)
     dirB.index_dir(config.PATH_B)
     dirA.find_compare()
+    dirA.write_output(config.OUTPUT_DIR_PATH)
     """
     compare = dirA.compare_to(dirB)
     write_compare_to_file(compare)

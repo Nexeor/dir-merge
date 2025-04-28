@@ -2,6 +2,7 @@ import os
 import logging
 
 from pathlib import Path
+from datetime import datetime
 from collections import defaultdict
 from typing import List, Dict, Tuple
 
@@ -63,19 +64,13 @@ class DirIndex:
                     self.logger.info(
                         f"Indexing file: \n\tName: {abs_path.name}\n\tPath: {abs_path}"
                     )
-                    file = File(abs_path)
+                    file = File(base_dir_path, abs_path)
                     self.all_files.append(file)
                     self.name_index[file.name].append(file)
                     self.path_index[file.dir_path].append(file)
                     self.size_index[file.size].append(file)
                 elif abs_path.is_dir():
                     self.logger.info(f"Indexing directory: {abs_path}")
-
-    # Scan all of the files in the index for matches
-    def find_matches(self):
-        for filename, files in self.name_index.items():
-            for file in files:
-                print(file)
 
     # Get list of all files in index
     # Check that file against all files that share a name:
@@ -109,6 +104,29 @@ class DirIndex:
                     for file_b in same_size_files[i + 1 :]:
                         self.__handle_compare(file_a, file_b)
 
+    def write_output(self, output_dir: Path):
+        DirIndex.__write_dict(self.matches, "Matches", output_dir)
+        DirIndex.__write_dict(self.diffs, "Diffs", output_dir)
+        DirIndex.__write_dict(self.content_name_dups, "Content-Name-Dup", output_dir)
+        DirIndex.__write_dict(self.content_path_dups, "Content-Path-Dup", output_dir)
+        DirIndex.__write_dict(self.name_dups, "Name-Dup", output_dir)
+        DirIndex.__write_dict(self.content_dups, "Content-Dup", output_dir)
+
+    @staticmethod
+    def __write_dict(dict: Dict, dict_name: str, output_dir: Path):
+        # Create output dir and file
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_path = output_dir / dict_name / f"{dict_name}-{timestamp}.txt"
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write output
+        with open(output_path, "w", encoding="utf-8") as output_file:
+            output_file.write(f"{dict_name}:\n")
+            for key, files in dict.items():
+                output_file.write(f"{key}:\n")
+                for file in files:
+                    output_file.write(f"\t{file}\n")
+
     def __handle_compare(self, file_a: File, file_b: File):
         comparison = self.comparison_cache.get((file_a, file_b))
         if not self.comparison_cache[(file_a, file_b)]:
@@ -118,29 +136,28 @@ class DirIndex:
         match comparison:
             case ComparisonResult.MATCH:
                 self.logger.info(f"MATCH:\n{file_a}{file_b}")
-                self.matches[(file_a.name, file_a.dir_path, file_a.quick_hash)] = (
-                    comparison
+                self.matches[(file_a.name, file_a.dir_path, file_a.quick_hash)].extend(
+                    [file_a, file_b]
                 )
             case ComparisonResult.DIFF:
                 self.logger.info(f"DIFF:\n{file_a}{file_b}")
-                self.diffs[(file_a.name, file_b.dir_path)] = comparison
+                self.diffs[(file_a.name, file_b.dir_path)].extend([file_a, file_b])
             case ComparisonResult.CONTENT_NAME_DUP:
                 self.logger.info(f"CONTENT-NAME:\n{file_a}{file_b}")
-                self.content_name_dups[(file_a.quick_hash, file_a.name)] = comparison
+                self.content_name_dups[(file_a.quick_hash, file_a.name)].extend(
+                    [file_a, file_b]
+                )
             case ComparisonResult.CONTENT_PATH_DUP:
                 self.logger.info(f"CONTENT-PATH:\n{file_a}{file_b}")
-                self.content_path_dups[(file_a.quick_hash, file_b.dir_path)] = (
-                    comparison
+                self.content_path_dups[(file_a.quick_hash, file_b.dir_path)].extend(
+                    [file_a, file_b]
                 )
             case ComparisonResult.NAME_DUP:
                 self.logger.info(f"NAME:\n{file_a}{file_b}")
-                self.name_dups[(file_a.name)] = comparison
+                self.name_dups[(file_a.name)].extend([file_a, file_b])
             case ComparisonResult.CONTENT_DUP:
                 self.logger.info(f"CONTENT:\n{file_a}{file_b}")
-                self.content_dups[(file_a.quick_hash)] = comparison
-            case ComparisonResult.UNIQUE:
-                self.logger.info(f"UNIQUE:\n{file_a}{file_b}")
-                self.unique.append(file_a)
+                self.content_dups[(file_a.quick_hash)].extend([file_a, file_b])
 
     # Pass a list of DirIndexes to combine with self
     def __combine_dir_index(self, others: List["DirIndex"]):
