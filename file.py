@@ -16,7 +16,10 @@ class File:
 
     def __str__(self):
         msg = (
-            f"File: {self.name}\n" f"\tPath: {self.dir_path}\n" f"\tSize: {self.size}\n"
+            f"File: {self.name}\n"
+            f"\tRel_Path: {self.rel_path}\n"
+            f"\tAbs_Path: {self.abs_path}\n"
+            f"\tSize: {self.size}\n"
         )
         if hasattr(self, "quick_hash"):
             msg += f"\tQuick Hash: {self.quick_hash}\n"
@@ -28,7 +31,7 @@ class File:
     def compare_to(self, other: "File"):
         # Compare traits
         same_name = self.name == other.name
-        same_path = self.dir_path == other.dir_path
+        same_path = self.rel_path == other.rel_path
         same_content = self.compare_content(other)
 
         # Assign comparison type
@@ -60,9 +63,9 @@ class File:
             return False
 
         # Full hash comparison
-        if not self.quick_hash:
+        if not self.full_hash:
             self.full_hash = self.__create_full_hash()
-        if not other.quick_hash:
+        if not other.full_hash:
             other.full_hash = other.__create_full_hash()
         if self.full_hash != other.full_hash:
             return False
