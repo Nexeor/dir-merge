@@ -3,7 +3,7 @@ import logging
 
 from pathlib import Path
 from collections import defaultdict
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import utils
 from file import File
@@ -15,16 +15,35 @@ class DirIndex:
         self.name = name
         self.logger = logging.getLogger(__name__)
 
+        # Dicts for indexing
         self.all_files: List[File] = []
         self.name_index: Dict[str : List[File]] = name_index or defaultdict(list)
         self.path_index: Dict[str : List[File]] = path_index or defaultdict(list)
         self.size_index: Dict[int : List[File]] = size_index or defaultdict(list)
 
-        self.matches: Dict[str : List[File]]  # { filename : List[Files]}
-        self.diff: Dict[str : List[File]]  # { filename : List[Files]}
-        self.content_name_dup: Dict[
-            (str, str) : List[File]
-        ]  # { (filename, hash) : List[Files]}
+        # Dicts for comparisons
+        self.comparison_cache: Dict[Tuple(File, File) : ComparisonResult] = defaultdict(
+            list
+        )
+        self.matches: Dict[Tuple(str, Path, str) : List[File]] = defaultdict(
+            list
+        )  # { (file_name, dir_path, quick_hash) : List[Files] }
+        self.diffs: Dict[Tuple(str, Path) : List[File]] = defaultdict(
+            list
+        )  # { (file_name, dir_path) : List[Files]}
+        self.content_name_dups: Dict[Tuple(str, str) : List[File]] = defaultdict(
+            list
+        )  # { (quick_hash, file_name) : List[Files] }
+        self.content_path_dups: Dict[Tuple(Path, str) : List[File]] = defaultdict(
+            list
+        )  # { (quick_hash, dir_path) : List[Files] }
+        self.name_dups: Dict[str : List[File]] = defaultdict(
+            list
+        )  # { file_name : List[Files] }
+        self.content_dups: Dict[str : List[File]] = defaultdict(
+            list
+        )  # { quick_hash : List[Files] }
+        self.unique: List[File] = defaultdict(list)  # List of "unique" files
 
     def __str__(self):
         msg = [f"Index: {self.name}\n"]
@@ -66,7 +85,7 @@ class DirIndex:
     #   Content-Path-Dup, Content-Dup
     # If no other comparison is found yet, then the file is unique
     def find_compare(self):
-        for file in self.all_files():
+        for file in self.all_files:
             file: File
 
             # Test against other files with the same name
@@ -74,121 +93,54 @@ class DirIndex:
             if len(same_name_files) > 1:
                 for i, file_a in enumerate(same_name_files):
                     for file_b in same_name_files[i + 1 :]:
-                        file_a: File
-                        comparison = file_a.compare_to(file_b)
-
-                        match comparison:
-                            case ComparisonResult.MATCH:
-                                self.matches[file_a.name].append(file_a)
-                            case ComparisonResult.DIFF:
-                                print("Diff!")
-                            case ComparisonResult.CONTENT_NAME_DUP:
-                                print("Content-name dup")
-                            case ComparisonResult.NAME_DUP:
-                                print("Name dup")
-                            case _:
-                                raise ValueError(
-                                    f"Illegal compare returned for name comparison: {comparison}"
-                                )
+                        self.__handle_compare(file_a, file_b)
 
             # Test against other files with the same size
             same_size_files = self.size_index[file.size]
             if len(same_size_files) > 1:
                 for i, file_a in enumerate(same_size_files):
                     for file_b in same_size_files[i + 1 :]:
-                        file_b: File
-                        comparison = file_a.compare_to(file_b)
+                        self.__handle_compare(file_a, file_b)
 
-                        match comparison:
-                            case ComparisonResult.CONTENT_PATH_DUP:
-                                return "Content-pathdup"
-                            case ComparisonResult.CONTENT_DUP:
-                                return "Content-dup"
-                            case _:
-                                raise ValueError(
-                                    f"Illegal compare returned for name comparison: {comparison}"
-                                )
+            # Test against other files with the same path
+            same_path_files = self.path_index[file.dir_path]
+            if len(same_path_files) > 1:
+                for i, file_a in enumerate(same_size_files):
+                    for file_b in same_size_files[i + 1 :]:
+                        self.__handle_compare(file_a, file_b)
 
-    # Compare this index object to the other. Return a dict containing the
-    # duplicates, dne's, and diff files
-    def compare_to(self, other: "DirIndex"):
-        self_dup = self.find_self_duplicates()
-        other_dup = other.find_self_duplicates()
-        cross_dup = self.find_cross_duplicates(other_dup)
-        combined_dup = self_dup.__combine_dir_index([other_dup, cross_dup])
+    def __handle_compare(self, file_a: File, file_b: File):
+        comparison = self.comparison_cache.get((file_a, file_b))
+        if not self.comparison_cache[(file_a, file_b)]:
+            comparison = file_a.compare_to(file_b)
+            self.comparison_cache[(file_a, file_b)] = comparison
 
-        self_dne = self.find_DNE(other)
-        other_dne = other.find_DNE(self)
-        combined_dne = self_dne.__combine_dir_index(other_dne)
-
-        diff, match = self.find_diff(other)
-        return {"DUP": combined_dup, "DNE": combined_dne, "DIFF": diff, "MATCH": match}
-
-    # Return an index of all duplicates within this index
-    # Duplicate: A file with the same name as another, but a different path
-    def find_self_duplicates(self):
-        duplicates = {
-            file_name: paths
-            for file_name, paths in self.index.items()
-            if len(paths) > 1
-        }
-
-        return DirIndex(name=f"internal_dup_{self.name}", index=duplicates)
-
-    # Return an index of all duplicates shared between self and other
-    def find_cross_duplicates(self, other: "DirIndex"):
-        duplicates = DirIndex(name=f"cross_dup_{self.name}_{other.name}")
-        for file_name in self.index:
-            if file_name in other.index:
-                duplicates.index[file_name].extend(self.index[file_name])
-                duplicates.index[file_name].extend(other.index[file_name])
-
-        return duplicates
-
-    # Return an index containing the files that only exist in self
-    # DNE: A file with a unique name that is present in only one index
-    def find_DNE(self, other: "DirIndex"):
-        dne = DirIndex(name=f"dne_{self.name}_{other.name}")
-        for file_name in self.index:
-            if file_name not in other.index:
-                dne.index[file_name].extend(self.index[file_name])
-
-        return dne
-
-    # Return an index containing the files that are "diff" across the self and other
-    # Diff: A file that appears in both indexes with the same name and relative path, but
-    # contain different content
-    def find_diff(self, other: "DirIndex"):
-        diff_logs = defaultdict(list)
-
-        combined = self.__combine_dir_index(other)
-
-        # Regroup index by matching relative path, { relpath : [abs_paths] }
-        same_rel_paths = defaultdict(list)
-        for file_name, file_paths in combined.index.items():
-            for path in file_paths:
-                try:
-                    relative_path = utils.get_relative_to_base_path(path)
-                    same_rel_paths[relative_path].append(path)
-                except ValueError as e:
-                    print(e)
-                    logging.error(e)
-                    same_rel_paths["<unmatched>"].append(path)
-
-        # Check matching relative paths for file equality
-        matches = defaultdict(list)
-        for rel_path, abs_paths in same_rel_paths.items():
-            for i, abs_path_A in enumerate(abs_paths):
-                for abs_path_B in abs_paths[i + 1 :]:
-                    diff_log = utils.check_file_diff(abs_path_A, abs_path_B)
-                    file_name = Path(abs_path_A).name
-
-                    if diff_log:
-                        diff_logs[rel_path].append(diff_log)
-                    else:
-                        matches[file_name].extend((abs_path_A, abs_path_B))
-
-        return (diff_logs, matches)
+        match comparison:
+            case ComparisonResult.MATCH:
+                self.logger.info(f"MATCH:\n{file_a}{file_b}")
+                self.matches[(file_a.name, file_a.dir_path, file_a.quick_hash)] = (
+                    comparison
+                )
+            case ComparisonResult.DIFF:
+                self.logger.info(f"DIFF:\n{file_a}{file_b}")
+                self.diffs[(file_a.name, file_b.dir_path)] = comparison
+            case ComparisonResult.CONTENT_NAME_DUP:
+                self.logger.info(f"CONTENT-NAME:\n{file_a}{file_b}")
+                self.content_name_dups[(file_a.quick_hash, file_a.name)] = comparison
+            case ComparisonResult.CONTENT_PATH_DUP:
+                self.logger.info(f"CONTENT-PATH:\n{file_a}{file_b}")
+                self.content_path_dups[(file_a.quick_hash, file_b.dir_path)] = (
+                    comparison
+                )
+            case ComparisonResult.NAME_DUP:
+                self.logger.info(f"NAME:\n{file_a}{file_b}")
+                self.name_dups[(file_a.name)] = comparison
+            case ComparisonResult.CONTENT_DUP:
+                self.logger.info(f"CONTENT:\n{file_a}{file_b}")
+                self.content_dups[(file_a.quick_hash)] = comparison
+            case ComparisonResult.UNIQUE:
+                self.logger.info(f"UNIQUE:\n{file_a}{file_b}")
+                self.unique.append(file_a)
 
     # Pass a list of DirIndexes to combine with self
     def __combine_dir_index(self, others: List["DirIndex"]):

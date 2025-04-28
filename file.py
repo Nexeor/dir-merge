@@ -51,17 +51,17 @@ class File:
             return False
 
         # Quick hash comparison (about 4KB)
-        if not hasattr(self, "quick_hash"):
+        if not self.quick_hash:
             self.quick_hash = self.__create_quick_hash()
-        if not hasattr(other, "quick_hash"):
+        if not other.quick_hash:
             other.quick_hash = other.__create_quick_hash()
         if self.quick_hash != other.quick_hash:
             return False
 
         # Full hash comparison
-        if not hasattr(self, "full_hash"):
+        if not self.quick_hash:
             self.full_hash = self.__create_full_hash()
-        if not hasattr(other, "full_hash"):
+        if not other.quick_hash:
             other.full_hash = other.__create_full_hash()
         if self.full_hash != other.full_hash:
             return False
