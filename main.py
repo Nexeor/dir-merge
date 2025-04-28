@@ -49,7 +49,7 @@ def parse_args():
 
 
 def build_index():
-    setup_logging()
+    # setup_logging()
     dirA = DirIndex("dirA")
     dirB = DirIndex("dirB")
     dirA.index_dir(config.PATH_A)

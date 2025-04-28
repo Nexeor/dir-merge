@@ -128,11 +128,13 @@ class DirIndex:
                     output_file.write(f"\t{file}\n")
 
     def __handle_compare(self, file_a: File, file_b: File):
-        comparison = self.comparison_cache.get((file_a, file_b))
-        if not self.comparison_cache[(file_a, file_b)]:
-            comparison = file_a.compare_to(file_b)
-            self.comparison_cache[(file_a, file_b)] = comparison
+        # Return if two files have been compared already
+        if self.comparison_cache[(file_a, file_b)]:
+            return
 
+        # Compare the two files and record
+        comparison = file_a.compare_to(file_b)
+        self.comparison_cache[(file_a, file_b)] = comparison
         match comparison:
             case ComparisonResult.MATCH:
                 self.logger.info(f"MATCH:\n{file_a}{file_b}")
