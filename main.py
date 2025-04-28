@@ -51,9 +51,8 @@ def parse_args():
 def build_index():
     # setup_logging()
     dirA = DirIndex("dirA")
-    dirB = DirIndex("dirB")
     dirA.index_dir(config.PATH_A)
-    dirB.index_dir(config.PATH_B)
+    dirA.index_dir(config.PATH_B)
     dirA.find_compare()
     dirA.write_output(config.OUTPUT_DIR_PATH)
     """
