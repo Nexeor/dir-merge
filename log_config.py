@@ -7,6 +7,7 @@ import config
 
 
 def setup_logging():
+    utils.ensure_path_exists(config.LOG_PATH)
     log_path = Path(config.LOG_PATH) / Path(f"log-{utils.get_timestamp()}.txt")
     file_handler = logging.FileHandler(log_path, mode="w")
     file_handler.setFormatter(logging.Formatter("%(message)s"))
