@@ -46,6 +46,24 @@ class DirIndex:
                 msg.append(f"\t{file_path}\n")
         return "".join(msg)
 
+    def print_to_file(self, output_dir: Path):
+        """Write comparison indexes and unique files to files in output_dir."""
+
+        data_to_write = {
+            "MATCH": self.matches,
+            "DIFF": self.diffs,
+            "CONTENT-NAME-DUP": self.content_name_dups,
+            "CONTENT-PATH-DUP": self.content_path_dups,
+            "NAME-DUP": self.name_dups,
+            "CONTENT-DUP": self.content_dups,
+            "UNIQUE": "\n".join(map(str, self.unique)),
+        }
+
+        for label, data in data_to_write.items():
+            utils.write_to_file(
+                label, output_dir / label, str(data), is_timestamped=True
+            )
+
     # Add all files in the given directory to this index
     def index_dir(self, base_dir_path):
         # Recursively iterate over filetree and add to index
@@ -72,76 +90,55 @@ class DirIndex:
     #   Content-Path-Dup, Content-Dup
     # If no other comparison is found yet, then the file is unique
     def find_compare(self):
+        def compare_files(file_a: File, file_b: File):
+            """Compares two files and caches the result. Returns True if a meaningful comparison was added."""
+            if self.comparison_cache[(file_a, file_b)]:
+                return False
+
+            comparison: Comparison = file_a.compare_to(file_b)
+            self.comparison_cache[(file_a, file_b)] = comparison
+            match comparison.type:
+                case ComparisonResult.MATCH:
+                    self.matches.add_comparison(comparison)
+                case ComparisonResult.DIFF:
+                    self.diffs.add_comparison(comparison)
+                case ComparisonResult.CONTENT_NAME_DUP:
+                    self.content_name_dups.add_comparison(comparison)
+                case ComparisonResult.CONTENT_PATH_DUP:
+                    self.content_path_dups.add_comparison(comparison)
+                case ComparisonResult.NAME_DUP:
+                    self.name_dups.add_comparison(comparison)
+                case ComparisonResult.CONTENT_DUP:
+                    self.content_dups.add_comparison(comparison)
+                case _:
+                    self.logger.info(f"NO RELATION: {file_a.name}, {file_b.name}")
+                    return False
+            return True
+
+        def compare_group(file_list):
+            """Compares all unique pairs in a group. Returns True if any comparison was found."""
+            found = False
+            if len(file_list) > 1:
+                for i, file_a in enumerate(same_name_files):
+                    for file_b in file_list[i + 1 :]:
+                        if compare_files(file_a, file_b):
+                            found = True
+            return found
+
         for file in self.all_files:
-            self.logger.info(f"Analyzing {file}")
             file: File
+            self.logger.info(f"Analyzing {file}")
 
             # Test against other files with the same name
-            same_name_files = self.name_index[file.name]
             self.logger.info("Comparing against same name:")
-            if len(same_name_files) > 1:
-                for i, file_a in enumerate(same_name_files):
-                    for file_b in same_name_files[i + 1 :]:
-                        self.__handle_compare(file_a, file_b)
+            same_name_files = self.name_index[file.name]
+            found_name_compare = compare_group(same_name_files)
 
             # Test against other files with the same size
             self.logger.info("Comparing against same size:")
             same_size_files = self.size_index[file.size]
-            if len(same_size_files) > 1:
-                for i, file_a in enumerate(same_size_files):
-                    for file_b in same_size_files[i + 1 :]:
-                        self.__handle_compare(file_a, file_b)
+            found_size_compare = compare_group(same_size_files)
 
-    def print_to_file(self, output_dir: Path):
-        self.matches.print_to_file(output_dir)
-        self.diffs.print_to_file(output_dir)
-        self.content_name_dups.print_to_file(output_dir)
-        self.content_path_dups.print_to_file(output_dir)
-        self.name_dups.print_to_file(output_dir)
-        self.content_dups.print_to_file(output_dir)
-
-    def __handle_compare(self, file_a: File, file_b: File):
-        # Return if two files have been compared already
-        if self.comparison_cache[(file_a, file_b)]:
-            return
-
-        # Compare the two files and record
-        comparison: Comparison = file_a.compare_to(file_b)
-        self.comparison_cache[(file_a, file_b)] = comparison
-        match comparison.type:
-            case ComparisonResult.MATCH:
-                self.matches.add_comparison(comparison)
-            case ComparisonResult.DIFF:
-                self.diffs.add_comparison(comparison)
-            case ComparisonResult.CONTENT_NAME_DUP:
-                self.content_name_dups.add_comparison(comparison)
-            case ComparisonResult.CONTENT_PATH_DUP:
-                self.content_path_dups.add_comparison(comparison)
-            case ComparisonResult.NAME_DUP:
-                self.name_dups.add_comparison(comparison)
-            case ComparisonResult.CONTENT_DUP:
-                self.content_dups.add_comparison(comparison)
-            case _:
-                self.logger.info(f"NO RELATION: {file_a.name}, {file_b.name}")
-
-    # Pass a list of DirIndexes to combine with self
-    def __combine_dir_index(self, others: List["DirIndex"]):
-        # Transform single DirIndex input into a list
-        if not isinstance(others, list):
-            others = [others]
-        dir_indexes: List["DirIndex"] = [self, *others]
-
-        # Combine the indexes
-        combined = defaultdict(list)
-        for dir_index in dir_indexes:
-            for file_name, file_paths in dir_index.index.items():
-                if file_name not in combined:
-                    combined[file_name] = []
-                combined[file_name].extend(file_paths)
-
-        # Build a combined name
-        combined_name = "combined_"
-        for dir_index in dir_indexes:
-            combined_name += f"_{dir_index.name}"
-
-        return DirIndex(name=combined_name, index=combined)
+            if not found_name_compare and not found_size_compare:
+                self.logger.info("Unique file")
+                self.unique.append(file)

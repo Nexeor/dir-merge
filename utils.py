@@ -94,6 +94,21 @@ def is_hidden(path: Path):
     return False
 
 
+def write_to_file(filename: str, output_dir: Path, msg: str, is_timestamped=False):
+    # Create output dir and file
+    if is_timestamped:
+        filename = f"{filename}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.txt"
+    else:
+        filename = f"{filename}.txt"
+
+    output_path = output_dir / filename
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Write output
+    with open(output_path, "w", encoding="utf-8") as output_file:
+        output_file.write(msg)
+
+
 # Check if the provided path exists. If it does, return it.
 # If build is true, create the dir if it doesn't exist
 # Otherwise, raise FnF exception
