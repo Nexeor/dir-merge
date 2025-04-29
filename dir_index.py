@@ -8,8 +8,8 @@ from typing import List, Dict, Tuple
 
 import utils
 from file import File
-from comparison_result import ComparisonResult
-
+from comparison import Comparison, ComparisonResult
+from comparison_index import ComparisonIndex
 
 class DirIndex:
     def __init__(self, name, name_index=None, path_index=None, size_index=None):
@@ -23,28 +23,17 @@ class DirIndex:
         self.size_index: Dict[int : List[File]] = size_index or defaultdict(list)
 
         # Dicts for comparisons
-        self.comparison_cache: Dict[Tuple(File, File) : ComparisonResult] = defaultdict(
+        # Cache for already seen comparisons
+        self.comparison_cache: Dict[Tuple(File, File) : Comparison] = defaultdict(
             list
         )
-        self.matches: Dict[Tuple(str, Path, str) : List[File]] = defaultdict(
-            list
-        )  # { (file_name, dir_path, quick_hash) : List[Files] }
-        self.diffs: Dict[Tuple(str, Path) : List[File]] = defaultdict(
-            list
-        )  # { (file_name, dir_path) : List[Files]}
-        self.content_name_dups: Dict[Tuple(str, str) : List[File]] = defaultdict(
-            list
-        )  # { (quick_hash, file_name) : List[Files] }
-        self.content_path_dups: Dict[Tuple(Path, str) : List[File]] = defaultdict(
-            list
-        )  # { (quick_hash, dir_path) : List[Files] }
-        self.name_dups: Dict[str : List[File]] = defaultdict(
-            list
-        )  # { file_name : List[Files] }
-        self.content_dups: Dict[str : List[File]] = defaultdict(
-            list
-        )  # { quick_hash : List[Files] }
-        self.unique: List[File] = defaultdict(list)  # List of "unique" files
+        self.matches = ComparisonIndex("MATCH", ComparisonResult.MATCH)
+        self.diffs = ComparisonIndex("DIFF", ComparisonResult.DIFF)
+        self.content_name_dups = ComparisonIndex("CONTENT-NAME-DUP", ComparisonResult.CONTENT_NAME_DUP)
+        self.content_path_dups = ComparisonIndex("CONTENT-PATH-DUP", ComparisonResult.CONTENT_PATH_DUP)
+        self.name_dups = ComparisonIndex("NAME-DUP", ComparisonResult.NAME_DUP)
+        self.content_dups = ComparisonIndex("CONTENT-DUP", ComparisonResult.CONTENT_DUP)
+        self.unique: List[File] = [] # List of "unique" files
 
     def __str__(self):
         msg = [f"Index: {self.name}\n"]
@@ -108,68 +97,35 @@ class DirIndex:
                     for file_b in same_path_files[i + 1 :]:
                         self.__handle_compare(file_a, file_b)
 
-    def write_output(self, output_dir: Path):
-        DirIndex.__write_dict(self.matches, "Matches", output_dir)
-        DirIndex.__write_dict(self.diffs, "Diffs", output_dir)
-        DirIndex.__write_dict(self.content_name_dups, "Content-Name-Dup", output_dir)
-        DirIndex.__write_dict(self.content_path_dups, "Content-Path-Dup", output_dir)
-        DirIndex.__write_dict(self.name_dups, "Name-Dup", output_dir)
-        DirIndex.__write_dict(self.content_dups, "Content-Dup", output_dir)
-
-    @staticmethod
-    def __write_dict(dict: Dict, dict_name: str, output_dir: Path):
-        # Create output dir and file
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        output_path = output_dir / dict_name / f"{dict_name}-{timestamp}.txt"
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Write output
-        with open(output_path, "w", encoding="utf-8") as output_file:
-            output_file.write(f"{dict_name}:\n")
-            for key, files in dict.items():
-                output_file.write(f"{key}:\n")
-                for file in files:
-                    output_file.write(f"\t{file}\n")
+    def print_to_file(self, output_dir: Path):
+        self.matches.print_to_file(output_dir)
+        self.diffs.print_to_file(output_dir)
+        self.content_name_dups.print_to_file(output_dir)
+        self.content_path_dups.print_to_file(output_dir)
+        self.name_dups.print_to_file(output_dir)
+        self.content_dups.print_to_file(output_dir)
 
     def __handle_compare(self, file_a: File, file_b: File):
         # Return if two files have been compared already
         if self.comparison_cache[(file_a, file_b)]:
             return
 
-        def add_compare(compare_type: str, file_list: List, file_a: File, file_b: File):
-            self.logger.info(f"{compare_type}:\n{file_a}{file_b}")
-            for file in [file_a, file_b]:
-                if file not in file_list:
-                    file_list.append(file)
-
         # Compare the two files and record
-        comparison = file_a.compare_to(file_b)
+        comparison: Comparison = file_a.compare_to(file_b)
         self.comparison_cache[(file_a, file_b)] = comparison
-        match comparison:
+        match comparison.type:
             case ComparisonResult.MATCH:
-                matches = self.matches[
-                    (file_a.name, file_a.rel_path, file_a.quick_hash)
-                ]
-                add_compare("MATCH", matches, file_a, file_b)
+                self.matches.add_comparison(comparison)
             case ComparisonResult.DIFF:
-                diffs = self.diffs[(file_a.name, file_b.rel_path)]
-                add_compare("DIFF", diffs, file_a, file_b)
+                self.diffs.add_comparison(comparison)
             case ComparisonResult.CONTENT_NAME_DUP:
-                content_name_dups = self.content_name_dups[
-                    (file_a.quick_hash, file_b.name)
-                ]
-                add_compare("CONTENT_NAME_DUP", content_name_dups, file_a, file_b)
+                self.content_name_dups.add_comparison(comparison)
             case ComparisonResult.CONTENT_PATH_DUP:
-                content_path_dups = self.content_path_dups[
-                    (file_a.quick_hash, file_b.rel_path)
-                ]
-                add_compare("CONTENT_PATH_DUP", content_path_dups, file_a, file_b)
+                self.content_path_dups.add_comparison(comparison)
             case ComparisonResult.NAME_DUP:
-                name_dups = self.name_dups[file_a.name]
-                add_compare("NAME_DUP", name_dups, file_a, file_b)
+                self.name_dups.add_comparison(comparison)
             case ComparisonResult.CONTENT_DUP:
-                content_dups = self.content_dups[file_a.quick_hash]
-                add_compare("CONTENT_DUP", content_dups, file_a, file_b)
+                self.content_dups.add_comparison(comparison)
             case _:
                 self.logger.info(f"NO RELATION: {file_a.name}, {file_b.name}")
 

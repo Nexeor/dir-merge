@@ -1,7 +1,7 @@
 import hashlib
 
 from pathlib import Path
-from comparison_result import ComparisonResult
+from comparison import Comparison, ComparisonResult
 
 
 class File:
@@ -28,7 +28,7 @@ class File:
 
         return msg
 
-    def compare_to(self, other: "File"):
+    def compare_to(self, other: "File") -> Comparison:
         # Compare traits
         same_name = self.name == other.name
         same_path = self.rel_path == other.rel_path
@@ -36,18 +36,18 @@ class File:
 
         # Assign comparison type
         if same_name and same_path and same_content:
-            return ComparisonResult.MATCH
+            return Comparison(self, other, ComparisonResult.MATCH)
         if same_name and same_path and not same_content:
-            return ComparisonResult.DIFF
+            return Comparison(self, other, ComparisonResult.DIFF)
         if same_content and same_name and not same_path:
-            return ComparisonResult.CONTENT_NAME_DUP
+            return Comparison(self, other, ComparisonResult.CONTENT_NAME_DUP)
         if same_content and same_path and not same_name:
-            return ComparisonResult.CONTENT_PATH_DUP
+            return Comparison(self, other,ComparisonResult.CONTENT_PATH_DUP)
         if same_name and not same_path and not same_content:
-            return ComparisonResult.NAME_DUP
+            return Comparison(self, other, ComparisonResult.NAME_DUP)
         if same_content and not same_path and not same_name:
-            return ComparisonResult.CONTENT_DUP
-        return ComparisonResult.UNIQUE
+            return Comparison(self, other, ComparisonResult.CONTENT_DUP)
+        return Comparison(self, other, ComparisonResult.UNIQUE)
 
     def compare_content(self, other: "File"):
         # Quick size check

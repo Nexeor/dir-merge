@@ -54,7 +54,7 @@ def build_index():
     dirA.index_dir(config.PATH_A)
     dirA.index_dir(config.PATH_B)
     dirA.find_compare()
-    dirA.write_output(config.OUTPUT_DIR_PATH)
+    dirA.print_to_file(config.OUTPUT_DIR_PATH)
     """
     compare = dirA.compare_to(dirB)
     write_compare_to_file(compare)
