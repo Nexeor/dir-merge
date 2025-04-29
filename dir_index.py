@@ -11,6 +11,7 @@ from file import File
 from comparison import Comparison, ComparisonResult
 from comparison_index import ComparisonIndex
 
+
 class DirIndex:
     def __init__(self, name, name_index=None, path_index=None, size_index=None):
         self.name = name
@@ -24,16 +25,18 @@ class DirIndex:
 
         # Dicts for comparisons
         # Cache for already seen comparisons
-        self.comparison_cache: Dict[Tuple(File, File) : Comparison] = defaultdict(
-            list
-        )
+        self.comparison_cache: Dict[Tuple(File, File) : Comparison] = defaultdict(list)
         self.matches = ComparisonIndex("MATCH", ComparisonResult.MATCH)
         self.diffs = ComparisonIndex("DIFF", ComparisonResult.DIFF)
-        self.content_name_dups = ComparisonIndex("CONTENT-NAME-DUP", ComparisonResult.CONTENT_NAME_DUP)
-        self.content_path_dups = ComparisonIndex("CONTENT-PATH-DUP", ComparisonResult.CONTENT_PATH_DUP)
+        self.content_name_dups = ComparisonIndex(
+            "CONTENT-NAME-DUP", ComparisonResult.CONTENT_NAME_DUP
+        )
+        self.content_path_dups = ComparisonIndex(
+            "CONTENT-PATH-DUP", ComparisonResult.CONTENT_PATH_DUP
+        )
         self.name_dups = ComparisonIndex("NAME-DUP", ComparisonResult.NAME_DUP)
         self.content_dups = ComparisonIndex("CONTENT-DUP", ComparisonResult.CONTENT_DUP)
-        self.unique: List[File] = [] # List of "unique" files
+        self.unique: List[File] = []  # List of "unique" files
 
     def __str__(self):
         msg = [f"Index: {self.name}\n"]
@@ -87,14 +90,6 @@ class DirIndex:
             if len(same_size_files) > 1:
                 for i, file_a in enumerate(same_size_files):
                     for file_b in same_size_files[i + 1 :]:
-                        self.__handle_compare(file_a, file_b)
-
-            # Test against other files with the same path
-            self.logger.info("Comparing against same path:")
-            same_path_files = self.path_index[file.dir_path]
-            if len(same_path_files) > 1:
-                for i, file_a in enumerate(same_path_files):
-                    for file_b in same_path_files[i + 1 :]:
                         self.__handle_compare(file_a, file_b)
 
     def print_to_file(self, output_dir: Path):

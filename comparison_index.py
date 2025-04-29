@@ -1,3 +1,5 @@
+import logging
+
 from datetime import datetime
 from pathlib import Path
 
@@ -8,17 +10,17 @@ from comparison import Comparison
 class ComparisonIndex:
     def __init__(self, name, comparison_type):
         self.name = name
-        self.type: Comparison = comparison_type # The comparison type this index holds
+        self.type: Comparison = comparison_type  # The comparison type this index holds
         self.index = defaultdict(list)
-    
-    def __repr__(self):
+
+    def __str__(self):
         msg = [f"{self.name}\n"]
         for key, file_list in self.index.items():
             msg.append(f"{key}:\n")
             for file in file_list:
                 msg.append(f"\t{file}\n")
         return "".join(msg)
-    
+
     def print_to_file(self, output_dir: Path):
         # Create output dir and file
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -27,23 +29,23 @@ class ComparisonIndex:
 
         # Write output
         with open(output_path, "w", encoding="utf-8") as output_file:
-            output_file.write(repr(self))
-
+            output_file.write(str(self))
 
     def add_comparison(self, comparison: Comparison):
         if comparison.type != self.type:
-            raise ValueError(f"Attempted to add {comparison.type} to index of {self.type}")
-        
+            raise ValueError(
+                f"Attempted to add {comparison.type} to index of {self.type}"
+            )
+        logging.info(str(comparison))
+
         key_parts = {
             "name": comparison.fileA.name,
             "path": comparison.fileA.rel_path,
             "content": comparison.fileA.quick_hash,
         }
         key = tuple(key_parts[part] for part in self.type.value)
-        
+
         index_entry = self.index[key]
         for file in [comparison.fileA, comparison.fileB]:
             if file not in index_entry:
                 index_entry.append(file)
-
-

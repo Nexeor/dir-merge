@@ -1,9 +1,10 @@
 from enum import Enum
 
+
 class ComparisonResult(Enum):
     MATCH = ("path", "name", "content")  # Same path, name, and content
-    DIFF = ("path", "name") # Same path and name, different content
-    CONTENT_NAME_DUP = ("content", "name") # Same content and name, different path
+    DIFF = ("path", "name")  # Same path and name, different content
+    CONTENT_NAME_DUP = ("content", "name")  # Same content and name, different path
     CONTENT_PATH_DUP = ("content", "path")  # Same content and path, different name
     NAME_DUP = ("name",)  # Same name, different content and path
     CONTENT_DUP = ("content",)  # Same content, different name and path
@@ -15,3 +16,6 @@ class Comparison:
         self.fileA = fileA
         self.fileB = fileB
         self.type = type
+
+    def __str__(self):
+        return f"Comparison: {self.type.name}\n{str(self.fileA)}{str(self.fileB)}"
