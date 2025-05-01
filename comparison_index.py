@@ -5,13 +5,15 @@ from pathlib import Path
 
 import utils
 from collections import defaultdict
-from comparison import Comparison
+from comparison import Comparison, ComparisonResult
 
 
 class ComparisonIndex:
     def __init__(self, name, comparison_type):
         self.name = name
-        self.type: Comparison = comparison_type  # The comparison type this index holds
+        self.type: ComparisonResult = (
+            comparison_type  # The comparison type this index holds
+        )
         self.index = defaultdict(list)
 
     def __repr__(self):

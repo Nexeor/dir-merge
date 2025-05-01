@@ -39,6 +39,9 @@ class DirIndex:
         self.content_dups = ComparisonIndex("CONTENT-DUP", ComparisonResult.CONTENT_DUP)
         self.unique: List[File] = []  # List of "unique" files
 
+        # Union index { rel_path : File }
+        self.union: Dict[Path : List[File]] = defaultdict(list)
+
     def __repr__(self):
         return (
             f"DirIndex(name={self.name!r}, "
@@ -55,7 +58,7 @@ class DirIndex:
             f"{len(self.comparison_cache)} comparisons cached"
         )
 
-    def print_index_to_file(self, output_dir: Path):
+    def print_trait_indexes_to_file(self, output_dir: Path):
         # Gather indexes
         indexes = {
             "NAME_INDEX": self.name_index,
@@ -63,17 +66,23 @@ class DirIndex:
             "SIZE_INDEX": self.size_index,
         }
         for name, index in indexes.items():
-            # Generate the string of this index
-            msg = [f"{self.name}\n"]
-            for key, file_list in index.items():
-                msg.append(f"{key}:\n")
-                for file in file_list:
-                    msg.append(f"\t{str(file)}\n\n")
+            self._print_index_to_file(name, index, output_dir)
+
+    def print_union_to_file(self, output_dir: Path):
+        self._print_index_to_file("UNION", self.union, output_dir)
+
+    def _print_index_to_file(self, index_name: str, index: Dict, output_dir: Path):
+        # Generate the string of this index
+        msg = [f"{self.name}\n"]
+        for key, file_list in index.items():
+            msg.append(f"{key}:\n")
+            for file in file_list:
+                msg.append(f"\t{str(file)}\n\n")
 
             # Write the string to the file
             utils.write_to_file(
-                filename=name,
-                output_dir=output_dir / name,
+                filename=index_name,
+                output_dir=output_dir / index_name,
                 msg="".join(msg),
                 is_timestamped=True,
             )
@@ -185,3 +194,12 @@ class DirIndex:
                 self.logger.info(f"NO RELATION: {file_a.name}, {file_b.name}")
                 return False
         return True
+
+    def resolve_matches(self):
+        for _, matches in self.matches.index.items():
+            self.logger.info(
+                f"Resolving MATCH: {repr(matches)}\n\tChoosing: {repr(matches)}"
+            )
+
+            to_keep: File = matches[0]
+            self.union[to_keep.rel_path].append(to_keep)

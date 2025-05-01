@@ -13,9 +13,11 @@ class ComparisonResult(Enum):
 
 class Comparison:
     def __init__(self, fileA, fileB, type: ComparisonResult):
-        self.fileA = fileA
-        self.fileB = fileB
-        self.type = type
+        from file import File
+
+        self.fileA: File = fileA
+        self.fileB: File = fileB
+        self.type: ComparisonResult = type
 
     def __repr__(self):
         return (
