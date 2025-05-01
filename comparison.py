@@ -8,7 +8,7 @@ class ComparisonResult(Enum):
     CONTENT_PATH_DUP = ("content", "path")  # Same content and path, different name
     NAME_DUP = ("name",)  # Same name, different content and path
     CONTENT_DUP = ("content",)  # Same content, different name and path
-    UNQIUE = ()  # No shared traits
+    UNIQUE = ()  # No shared traits
 
 
 class Comparison:

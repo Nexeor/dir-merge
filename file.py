@@ -21,20 +21,23 @@ class File:
         )
 
     def __str__(self):
-        msg = (
-            f"File: {self.name}\n"
-            f"\tRel_Path: {self.rel_path}\n"
-            f"\tAbs_Path: {self.abs_path}\n"
-            f"\tSize: {self.size}\n"
-        )
+        msg = [
+            f"File: {self.name}",
+            f"\tRel_Path: {self.rel_path}",
+            f"\tAbs_Path: {self.abs_path}",
+            f"\tSize: {self.size}",
+        ]
         if self.quick_hash is not None:
-            msg += f"\tQuick Hash: {self.quick_hash}\n"
+            msg.append(f"\tQuick Hash: {self.quick_hash}")
         if self.full_hash is not None:
-            msg += f"\tFull Hash: {self.full_hash}\n"
+            msg.append(f"\tFull Hash: {self.full_hash}")
 
-        return msg
+        return "\n".join(msg)
 
     def compare_to(self, other: "File") -> Comparison:
+        if self is other:
+            raise ValueError(f"Attempted to compare file {repr(self)} to itself")
+
         # Compare traits
         same_name = self.name == other.name
         same_path = self.rel_path == other.rel_path
