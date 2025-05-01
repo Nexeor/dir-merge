@@ -8,7 +8,7 @@ class ComparisonResult(Enum):
     CONTENT_PATH_DUP = ("content", "path")  # Same content and path, different name
     NAME_DUP = ("name",)  # Same name, different content and path
     CONTENT_DUP = ("content",)  # Same content, different name and path
-    UNIQUE = 6  # Content and name are different (path may be shared)
+    UNQIUE = ()  # No shared traits
 
 
 class Comparison:
@@ -17,5 +17,16 @@ class Comparison:
         self.fileB = fileB
         self.type = type
 
+    def __repr__(self):
+        return (
+            f"Comparison(type={self.type.name}, "
+            f"fileA={repr(self.fileA)}, "
+            f"fileB={repr(self.fileB)})"
+        )
+
     def __str__(self):
-        return f"Comparison: {self.type.name}\n{str(self.fileA)}{str(self.fileB)}"
+        return (
+            f"Comparison Type: {self.type.name}\n"
+            f"File A: {self.fileA.name} ({self.fileA.rel_path})\n"
+            f"File B: {self.fileB.name} ({self.fileB.rel_path})"
+        )

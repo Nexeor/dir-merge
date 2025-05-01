@@ -14,6 +14,12 @@ class File:
         self.quick_hash = None
         self.full_hash = None
 
+    def __repr__(self):
+        return (
+            f"File(name={self.name!r}, rel_path={self.rel_path!r}, size={self.size}, "
+            f"quick_hash={self.quick_hash!r}, full_hash={self.full_hash!r})"
+        )
+
     def __str__(self):
         msg = (
             f"File: {self.name}\n"
@@ -21,9 +27,9 @@ class File:
             f"\tAbs_Path: {self.abs_path}\n"
             f"\tSize: {self.size}\n"
         )
-        if hasattr(self, "quick_hash"):
+        if self.quick_hash is not None:
             msg += f"\tQuick Hash: {self.quick_hash}\n"
-        if hasattr(self, "full_hash"):
+        if self.full_hash is not None:
             msg += f"\tFull Hash: {self.full_hash}\n"
 
         return msg
@@ -42,7 +48,7 @@ class File:
         if same_content and same_name and not same_path:
             return Comparison(self, other, ComparisonResult.CONTENT_NAME_DUP)
         if same_content and same_path and not same_name:
-            return Comparison(self, other,ComparisonResult.CONTENT_PATH_DUP)
+            return Comparison(self, other, ComparisonResult.CONTENT_PATH_DUP)
         if same_name and not same_path and not same_content:
             return Comparison(self, other, ComparisonResult.NAME_DUP)
         if same_content and not same_path and not same_name:

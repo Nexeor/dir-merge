@@ -38,31 +38,66 @@ class DirIndex:
         self.content_dups = ComparisonIndex("CONTENT-DUP", ComparisonResult.CONTENT_DUP)
         self.unique: List[File] = []  # List of "unique" files
 
+    def __repr__(self):
+        return (
+            f"DirIndex(name={self.name!r}, "
+            f"files_indexed={len(self.all_files)}, "
+            f"unique_files={len(self.unique)}, "
+            f"comparisons_cached={len(self.comparison_cache)})"
+        )
+
     def __str__(self):
-        msg = [f"Index: {self.name}\n"]
-        for file_name in self.index:
-            msg.append(f"{file_name}\n")
-            for file_path in self.index[file_name]:
-                msg.append(f"\t{file_path}\n")
-        return "".join(msg)
+        return (
+            f"DirIndex '{self.name}': "
+            f"{len(self.all_files)} files indexed, "
+            f"{len(self.unique)} unique, "
+            f"{len(self.comparison_cache)} comparisons cached"
+        )
 
-    def print_to_file(self, output_dir: Path):
-        """Write comparison indexes and unique files to files in output_dir."""
-
-        data_to_write = {
-            "MATCH": self.matches,
-            "DIFF": self.diffs,
-            "CONTENT-NAME-DUP": self.content_name_dups,
-            "CONTENT-PATH-DUP": self.content_path_dups,
-            "NAME-DUP": self.name_dups,
-            "CONTENT-DUP": self.content_dups,
-            "UNIQUE": "\n".join(map(str, self.unique)),
+    def print_index_to_file(self, output_dir: Path):
+        # Gather indexes
+        indexes = {
+            "NAME_INDEX": self.name_index,
+            "PATH_INDEX": self.path_index,
+            "SIZE_INDEX": self.size_index,
         }
+        for name, index in indexes.items():
+            # Generate the string of this index
+            msg = [f"{self.name}\n"]
+            for key, file_list in index.items():
+                msg.append(f"{key}:\n")
+                for file in file_list:
+                    msg.append(str(file))
 
-        for label, data in data_to_write.items():
+            # Write the string to the file
             utils.write_to_file(
-                label, output_dir / label, str(data), is_timestamped=True
+                filename=name,
+                output_dir=output_dir / name,
+                msg=msg,
+                is_timestamped=True,
             )
+
+    def print_comparison_to_file(self, output_dir: Path):
+        """Write comparison indexes and unique files to files in output_dir."""
+        # Gather comparison indexes and write to file
+        comparison_indexes = [
+            self.matches,
+            self.diffs,
+            self.content_name_dups,
+            self.name_dups,
+            self.name_dups,
+            self.content_dups,
+        ]
+        for index in comparison_indexes:
+            index.print_to_file(output_dir)
+
+        # Gather unique files and write to file
+        utils.write_to_file(
+            filename="UNIQUE",
+            output_dir=output_dir / "UNIQUE",
+            msg=str("\n".join(map(str, self.unique))),
+            s_timestamped=True,
+        )
 
     # Add all files in the given directory to this index
     def index_dir(self, base_dir_path):

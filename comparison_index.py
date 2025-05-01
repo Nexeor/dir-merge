@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+import utils
 from collections import defaultdict
 from comparison import Comparison
 
@@ -13,23 +14,25 @@ class ComparisonIndex:
         self.type: Comparison = comparison_type  # The comparison type this index holds
         self.index = defaultdict(list)
 
+    def __repr__(self):
+        return (
+            f"ComparisonIndex(name={self.name!r}, type={self.type}, "
+            f"entries={sum(len(v) for v in self.index.values())}, "
+            f"keys={len(self.index)})"
+        )
+
     def __str__(self):
-        msg = [f"{self.name}\n"]
+        msg = [f"ComparisonIndex: {self.name} (Type: {self.type})\n"]
         for key, file_list in self.index.items():
-            msg.append(f"{key}:\n")
+            msg.append(f"Key: {key}\n")
             for file in file_list:
-                msg.append(f"\t{file}\n")
+                msg.append(f"\t{file.name} ({file.rel_path})\n")
         return "".join(msg)
 
     def print_to_file(self, output_dir: Path):
-        # Create output dir and file
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        output_path = output_dir / self.name / f"{self.name}-{timestamp}.txt"
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Write output
-        with open(output_path, "w", encoding="utf-8") as output_file:
-            output_file.write(str(self))
+        utils.write_to_file(
+            self.name, output_dir / self.name, str(self), is_timestamped=True
+        )
 
     def add_comparison(self, comparison: Comparison):
         if comparison.type != self.type:

@@ -37,46 +37,6 @@ def check_file_diff(file_path_A, file_path_B):
     return diff_log
 
 
-def write_compare_to_file(compare):
-    from dir_index import DirIndex
-
-    # Create unique files using timestamp
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    with open(
-        f"{OUTPUT_DIR_PATH}/missing/MISSING-{timestamp}.txt", "w", encoding="utf-8"
-    ) as file:
-        dne_index: DirIndex = compare["DNE"]
-        for _, dne_paths in dne_index.index.items():
-            for path in dne_paths:
-                file.write(make_link(path))
-
-    with open(f"{OUTPUT_DIR_PATH}/diff/DIFF-{timestamp}.txt", "w") as file:
-        diff_index: Dict = compare["DIFF"]
-        # print(diff_index)
-
-        for _, diffs in diff_index.items():
-            for diff in diffs:
-                file.writelines(diff)
-
-    with open(
-        f"{OUTPUT_DIR_PATH}/duplicate/DUPLICATE-{timestamp}.txt", "w", encoding="utf-8"
-    ) as file:
-        dup_index: DirIndex = compare["DUP"]
-        for dup_name, dup_paths in dup_index.index.items():
-            file.write(f"{dup_name}\n")
-            for path in dup_paths:
-                file.write(make_link(path))
-
-    with open(
-        f"{OUTPUT_DIR_PATH}/matches/MATCH-{timestamp}.txt", "w", encoding="utf-8"
-    ) as file:
-        match_index: Dict = compare["MATCH"]
-        for match_name, match_paths in match_index.items():
-            file.write(f"{match_name}\n")
-            for path in match_paths:
-                file.write(make_link(path))
-
-
 def make_link(path):
     encoded_path = quote(path.replace("\\", "/"))
     return f"file:///{encoded_path}"
@@ -95,9 +55,23 @@ def is_hidden(path: Path):
 
 
 def write_to_file(filename: str, output_dir: Path, msg: str, is_timestamped=False):
-    # Create output dir and file
+    """
+    Writes a message to a text file in the specified output directory.
+
+    If `is_timestamped` is True, appends a timestamp to the filename before writing.
+    Creates the output directory if it does not already exist.
+
+    Args:
+        filename (str): The base name of the file (without extension or timestamp).
+        output_dir (Path): The directory where the file should be saved.
+        msg (str): The message content to be written to the file.
+        is_timestamped (bool, optional): Whether to append a timestamp to the filename. Defaults to False.
+
+    Returns:
+        None
+    """
     if is_timestamped:
-        filename = f"{filename}-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.txt"
+        filename = f"{filename}-{get_timestamp()}.txt"
     else:
         filename = f"{filename}.txt"
 
