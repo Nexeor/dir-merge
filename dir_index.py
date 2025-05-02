@@ -203,3 +203,12 @@ class DirIndex:
 
             to_keep: File = matches[0]
             self.union[to_keep.rel_path].append(to_keep)
+
+    def resolve_diff(self):
+        for _, diffs in self.diffs.index.items():
+            # Keep one diff, delete other
+            # Keep both diffs, rename one
+            # Delete both
+            self.logger.info(f"Resolving DIFF: {repr(diffs)}")
+
+            
