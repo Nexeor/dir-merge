@@ -1,11 +1,10 @@
 import logging
-
-from datetime import datetime
 from pathlib import Path
+from collections import defaultdict
 
 import utils
-from collections import defaultdict
 from comparison import Comparison, ComparisonResult
+from file import File
 
 
 class ComparisonIndex:
@@ -14,7 +13,7 @@ class ComparisonIndex:
         self.type: ComparisonResult = (
             comparison_type  # The comparison type this index holds
         )
-        self.index = defaultdict(list)
+        self.index = defaultdict(list[File])
 
     def __repr__(self):
         return (

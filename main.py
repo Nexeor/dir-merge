@@ -17,10 +17,6 @@ def main():
     args = parse_args()
     if args.index:
         build_index()
-    elif args.combine:
-        build_union()
-    else:
-        build_union()
 
 
 # Ensure that the output directories exist
@@ -50,32 +46,17 @@ def parse_args():
 
 def build_index():
     # setup_logging()
-    dirA = DirIndex("dirA")
-    dirA.index_dir(config.PATH_A)
-    dirA.index_dir(config.PATH_B)
-    dirA.print_trait_indexes_to_file(config.OUTPUT_DIR_PATH)
+    test_index = DirIndex("test_index")
+    test_index.index_dir(config.PATH_A)
+    test_index.index_dir(config.PATH_B)
+    test_index.print_trait_indexes_to_file(config.OUTPUT_DIR_PATH)
 
-    dirA.find_compare()
-    dirA.print_comparison_to_file(config.OUTPUT_DIR_PATH)
+    test_index.find_compare()
+    test_index.print_comparison_to_file(config.OUTPUT_DIR_PATH)
 
-    dirA.resolve_matches()
-    dirA.print_union_to_file(config.OUTPUT_DIR_PATH)
-    """
-    compare = dirA.compare_to(dirB)
-    write_compare_to_file(compare)
-    """
-
-
-def build_union():
-    setup_logging()
-    dirA = DirIndex("dirA")
-    dirB = DirIndex("dirB")
-    dirA.index_dir(PATH_A)
-    dirB.index_dir(PATH_B)
-
-    compare = dirA.compare_to(dirB)
-    union = UnionBuilder()
-    union.add_matches(compare["MATCH"])
+    # test_index.resolve_matches()
+    test_index.resolve_diff()
+    test_index.print_union_to_file(config.OUTPUT_DIR_PATH)
 
 
 # Compare base_dir and new_dir and identify differences

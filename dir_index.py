@@ -7,6 +7,7 @@ from collections import defaultdict
 from typing import List, Dict, Tuple
 
 import utils
+import cli
 from file import File
 from comparison import Comparison, ComparisonResult
 from comparison_index import ComparisonIndex
@@ -206,9 +207,71 @@ class DirIndex:
 
     def resolve_diff(self):
         for _, diffs in self.diffs.index.items():
-            # Keep one diff, delete other
-            # Keep both diffs, rename one
-            # Delete both
+            # Choose which files to keep, asking if they want to rename
+            # If more than one file remaining, prompt to rename files
             self.logger.info(f"Resolving DIFF: {repr(diffs)}")
 
-            
+            # Display files
+            msg = ["DIFF: Files have the same name and path but have different content"]
+            for i, diff_file in enumerate(diffs, 1):
+                msg.append(f"{i}) {str(diff_file)}")
+            print("\n".join(msg))
+
+            # Ask for line-by-line DIFF
+            msg = "Would you like to view a line-by-line comparison?"
+            yes_no_choices = ["Yes", "No"]
+            comparing = True
+            while comparing:
+                user_choice = cli.prompt_user_options(msg, yes_no_choices)
+                match user_choice:
+                    case 1:
+                        to_compare: List[File] = []
+                        if len(diffs) == 2:
+                            to_compare = [diffs[0], diffs[1]]
+                            comparing = False
+                        else:
+                            for i in range(2):
+                                msg = f"Choose {'first' if i == 0 else 'second'} file to compare"
+                                diff_files = [
+                                    diff_file
+                                    for diff_file in diffs
+                                    if diff_file.abs_path not in to_compare
+                                ]
+
+                                user_choice = cli.prompt_user_options(
+                                    msg,
+                                    [diff_file.abs_path for diff_file in diff_files],
+                                )
+                                to_compare.append(diff_files[user_choice])
+                        diff_log = utils.check_file_diff(
+                            to_compare[0].abs_path, to_compare[1].abs_path
+                        )
+                        for line in diff_log:
+                            print(line)
+                    case 2:
+                        comparing = False
+
+            # Ask how to resolve diff
+            msg = ["Choose how to resolve diff:"]
+            options = [
+                "Keep one",
+                "Keep all (system will auto-rename)",
+                "Generate line-by-line comparison",
+                "Delete all",
+            ]
+            user_choice = cli.prompt_user_options("\n".join(msg), options)
+            match user_choice:
+                case 1:
+                    msg = "Choose which file to keep"
+                    choices = [
+                        utils.make_link(diff_file.abs_path) for diff_file in diffs
+                    ]
+                    user_choice = cli.prompt_user_options(msg, choices)
+                    to_keep = diffs[user_choice]
+                    self.union[to_keep.rel_path].append(to_keep)
+                case 2:
+                    for i, diff_file in enumerate(diffs):
+                        diff_file.name = f"{diff_file.name}_v{i}"
+                        self.union[diff_file.rel_path].append(diff_file)
+                case 3:
+                    pass  # Intentionally do nothing

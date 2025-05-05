@@ -23,23 +23,37 @@ def get_relative_to_base_path(full_path):
 
 
 # Given two file paths, check if they contain the same content
-def check_file_diff(file_path_A, file_path_B):
+def check_file_diff(path_a, path_b):
     diff_log = None
-    if not filecmp.cmp(file_path_A, file_path_B, shallow=False):
-        with open(file_path_A) as base:
-            base_content = base.readlines()
-        with open(file_path_B) as comp:
-            comp_content = comp.readlines()
+    if not filecmp.cmp(path_a, path_b, shallow=False):
+        base_content = path_a.read_text().splitlines(keepends=True)
+        comp_content = path_b.read_text().splitlines(keepends=True)
 
         diff_log = list(
-            difflib.unified_diff(base_content, comp_content, file_path_A, file_path_B)
+            difflib.unified_diff(base_content, comp_content, str(path_a), str(path_b))
         )
     return diff_log
 
 
-def make_link(path):
-    encoded_path = quote(path.replace("\\", "/"))
-    return f"file:///{encoded_path}"
+def make_link(path: Path) -> str:
+    """
+    Converts a pathlib.Path object into a clickable file:// URL link.
+    """
+    # Resolve the absolute path
+    abs_path = path.resolve()
+
+    # Convert to URI-compliant format
+    # On Windows, need to add an extra slash: file:///C:/Users/...
+    # On POSIX, file:///home/user/...
+    if abs_path.is_absolute():
+        path_str = abs_path.as_posix()  # Converts backslashes to forward slashes
+        return (
+            f"file:///{quote(path_str)}"
+            if Path().anchor
+            else f"file://{quote(path_str)}"
+        )
+    else:
+        raise ValueError("Path must be absolute to create a file link.")
 
 
 def get_timestamp():

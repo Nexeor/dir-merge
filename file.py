@@ -3,6 +3,8 @@ import hashlib
 from pathlib import Path
 from comparison import Comparison, ComparisonResult
 
+from utils import make_link
+
 
 class File:
     def __init__(self, base_path: Path, abs_path: Path):
@@ -23,14 +25,10 @@ class File:
     def __str__(self):
         msg = [
             f"File: {self.name}",
-            f"\tRel_Path: {self.rel_path}",
-            f"\tAbs_Path: {self.abs_path}",
+            f"\tRelative Path: {self.rel_path}",
             f"\tSize: {self.size}",
+            f"\tView File: {make_link(self.abs_path)}",
         ]
-        if self.quick_hash is not None:
-            msg.append(f"\tQuick Hash: {self.quick_hash}")
-        if self.full_hash is not None:
-            msg.append(f"\tFull Hash: {self.full_hash}")
 
         return "\n".join(msg)
 
