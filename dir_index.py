@@ -111,7 +111,7 @@ class DirIndex:
         )
 
     # Add all files in the given directory to this index
-    def index_dir(self, base_dir_path):
+    def index_dir(self, base_dir_path, normalize_line_endings=False):
         # Recursively iterate over filetree and add to index
         base_dir_path = Path(base_dir_path)
         for abs_path in base_dir_path.rglob("*"):
@@ -120,6 +120,13 @@ class DirIndex:
                     self.logger.info(
                         f"Indexing file: \n\tName: {abs_path.name}\n\tPath: {abs_path}"
                     )
+
+                    # Convert to lf for diff comparison
+                    print(abs_path.suffix.lower())
+                    if abs_path.suffix.lower() == ".md" and normalize_line_endings:
+                        self.logger.info(f"Normalizing file...")
+                        self._convert_to_lf(abs_path)
+
                     file = File(base_dir_path, abs_path)
                     self.all_files.append(file)
                     self.name_index[file.name].append(file)
@@ -127,6 +134,17 @@ class DirIndex:
                     self.size_index[file.size].append(file)
                 elif abs_path.is_dir():
                     self.logger.info(f"Indexing directory: {abs_path}")
+
+    def _convert_to_lf(self, file_path):
+        """MODIFIES FILE CONTENT!"""
+        with open(file_path, "r", newline="", encoding="utf-8") as file:
+            content = file.read()
+
+        # Replace all line endings with LF (Unix-style)
+        content = content.replace("\r\n", "\n").replace("\r", "\n")
+
+        with open(file_path, "w", newline="", encoding="utf-8") as file:
+            file.write(content)
 
     # Get list of all files in index
     # Check that file against all files that share a name:
