@@ -14,14 +14,13 @@ from comparison_index import ComparisonIndex
 
 
 class DirIndex:
-    def __init__(self, name, name_index=None, path_index=None, size_index=None):
+    def __init__(self, name, name_index=None, size_index=None):
         self.name = name
         self.logger = logging.getLogger(__name__)
 
         # Common trait indexes
         self.all_files: List[File] = []
         self.name_index: Dict[str : List[File]] = name_index or defaultdict(list)
-        self.path_index: Dict[str : List[File]] = path_index or defaultdict(list)
         self.size_index: Dict[int : List[File]] = size_index or defaultdict(list)
 
         # Cache for already seen comparisons
@@ -63,7 +62,6 @@ class DirIndex:
         # Gather indexes
         indexes = {
             "NAME_INDEX": self.name_index,
-            "PATH_INDEX": self.path_index,
             "SIZE_INDEX": self.size_index,
         }
         for name, index in indexes.items():
@@ -122,15 +120,14 @@ class DirIndex:
                     )
 
                     # Convert to lf for diff comparison
-                    print(abs_path.suffix.lower())
                     if abs_path.suffix.lower() == ".md" and normalize_line_endings:
-                        self.logger.info(f"Normalizing file...")
+                        self.logger.info(f"Normalizing line endings to lf...")
                         self._convert_to_lf(abs_path)
 
+                    # Create file object and add to indexes
                     file = File(base_dir_path, abs_path)
                     self.all_files.append(file)
                     self.name_index[file.name].append(file)
-                    self.path_index[file.rel_path].append(file)
                     self.size_index[file.size].append(file)
                 elif abs_path.is_dir():
                     self.logger.info(f"Indexing directory: {abs_path}")
