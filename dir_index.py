@@ -217,37 +217,19 @@ class DirIndex:
                 msg.append(f"{i}) {str(diff_file)}")
             print("\n".join(msg))
 
-            # Ask for line-by-line DIFF
+            # Ask for line-by-line DIFF until user continues
             msg = "Would you like to view a line-by-line comparison?"
             yes_no_choices = ["Yes", "No"]
             comparing = True
             while comparing:
                 user_choice = cli.prompt_user_options(msg, yes_no_choices)
                 match user_choice:
+                    # Generate a line-by-line
                     case 1:
-                        to_compare: List[File] = []
-                        if len(diffs) == 2:
-                            to_compare = [diffs[0], diffs[1]]
-                            comparing = False
-                        else:
-                            for i in range(2):
-                                msg = f"Choose {'first' if i == 0 else 'second'} file to compare"
-                                diff_files = [
-                                    diff_file
-                                    for diff_file in diffs
-                                    if diff_file.abs_path not in to_compare
-                                ]
-
-                                user_choice = cli.prompt_user_options(
-                                    msg,
-                                    [diff_file.abs_path for diff_file in diff_files],
-                                )
-                                to_compare.append(diff_files[user_choice])
-                        diff_log = utils.check_file_diff(
-                            to_compare[0].abs_path, to_compare[1].abs_path
-                        )
+                        diff_log = self._generate_line_by_line_diff(diffs)
                         for line in diff_log:
                             print(line)
+                    # Continue
                     case 2:
                         comparing = False
 
@@ -275,3 +257,27 @@ class DirIndex:
                         self.union[diff_file.rel_path].append(diff_file)
                 case 3:
                     pass  # Intentionally do nothing
+
+    # Given a list of diff files, prompt the user to pick two to generate a diff from
+    def _generate_line_by_line_diff(self, diffs: List[File]):
+        to_compare: List[File] = []
+        if len(diffs) == 2:
+            to_compare = [diffs[0], diffs[1]]
+        else:
+            for i in range(2):
+                msg = f"Choose {'first' if i == 0 else 'second'} file to compare"
+                diff_files = [
+                    diff_file
+                    for diff_file in diffs
+                    if diff_file.abs_path not in to_compare
+                ]
+
+                user_choice = cli.prompt_user_options(
+                    msg,
+                    [diff_file.abs_path for diff_file in diff_files],
+                )
+                to_compare.append(diff_files[user_choice])
+        diff_log = utils.check_file_diff(to_compare[0].abs_path, to_compare[1].abs_path)
+        if not diff_log:
+            print("No differences found?")
+        return diff_log
