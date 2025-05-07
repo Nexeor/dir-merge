@@ -299,7 +299,7 @@ class DirIndex:
 
     def resolve_content_name_dup(self):
         for _, dups in self.content_name_dups.index.items():
-            self.logger.info(f"Resolving DIFF: {repr(dups)}")
+            self.logger.info(f"Resolving content-name dup: {repr(dups)}")
 
             msg = [
                 "CONTENT-NAME-DUP: Files have same content and name, but different path"
@@ -318,6 +318,33 @@ class DirIndex:
             match user_choice:
                 case 1:
                     msg = "Choose which path to keep"
+                    choices = [dup_file.abs_path for dup_file in dups]
+                    user_choice = cli.prompt_user_options(msg, choices)
+                    to_keep = dups[user_choice]
+                    self.union[to_keep.rel_path].append(to_keep)
+                case 2:
+                    for i, dup_file in enumerate(dups):
+                        self.union[dup_file.rel_path].append(dup_file)
+                case 3:
+                    pass
+
+    def resolve_content_dup(self):
+        for _, dups in self.name_dups.index.items():
+            self.logger.info(f"Resolving content dup: {repr(dups)}")
+
+            msg = [
+                "CONTENT-DUP: Files have same content, but have different name and path"
+            ]
+            for i, dup_file in enumerate(dups, 1):
+                msg.append(f"{i}) {str(dup_file)}")
+            print("\n".join(msg))
+
+            msg = "Choose how to resolve dup:"
+            options = ["Keep one file", "Keep all files", "Delete all files"]
+            user_choice = cli.prompt_user_options(msg, options)
+            match user_choice:
+                case 1:
+                    msg = "Choose which file to keep"
                     choices = [dup_file.abs_path for dup_file in dups]
                     user_choice = cli.prompt_user_options(msg, choices)
                     to_keep = dups[user_choice]
