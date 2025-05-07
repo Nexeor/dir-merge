@@ -93,7 +93,7 @@ class DirIndex:
             self.matches,
             self.diffs,
             self.content_name_dups,
-            self.name_dups,
+            self.content_path_dups,
             self.name_dups,
             self.content_dups,
         ]
@@ -189,7 +189,7 @@ class DirIndex:
             self.comparison_cache[(file_a, file_b)]
             or self.comparison_cache[(file_b, file_a)]
         ):
-            return False
+            return True
 
         comparison: Comparison = file_a.compare_to(file_b)
         self.comparison_cache[(file_a, file_b)] = comparison
@@ -296,3 +296,34 @@ class DirIndex:
         if not diff_log:
             print("No differences found?")
         return diff_log
+
+    def resolve_content_name_dup(self):
+        for _, dups in self.content_name_dups.index.items():
+            self.logger.info(f"Resolving DIFF: {repr(dups)}")
+
+            msg = [
+                "CONTENT-NAME-DUP: Files have same content and name, but different path"
+            ]
+            for i, dup_file in enumerate(dups, 1):
+                msg.append(f"{i}) {str(dup_file)}")
+            print("\n".join(msg))
+
+            msg = "Choose how to resolve dup:"
+            options = [
+                "Keep one path",
+                "Keep all paths",
+                "Delete all paths",
+            ]
+            user_choice = cli.prompt_user_options(msg, options)
+            match user_choice:
+                case 1:
+                    msg = "Choose which path to keep"
+                    choices = [dup_file.abs_path for dup_file in dups]
+                    user_choice = cli.prompt_user_options(msg, choices)
+                    to_keep = dups[user_choice]
+                    self.union[to_keep.rel_path].append(to_keep)
+                case 2:
+                    for i, dup_file in enumerate(dups):
+                        self.union[dup_file.rel_path].append(dup_file)
+                case 3:
+                    pass

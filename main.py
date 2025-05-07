@@ -16,7 +16,9 @@ def main():
     setup_logging()
     args = parse_args()
     if args.test:
-        test()
+        run_full_test()
+    if args.index:
+        run_index_test()
 
 
 # Ensure that the output directories exist
@@ -38,13 +40,23 @@ def setup_dirs():
 
 def parse_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--index", action="store_true")
     parser.add_argument("-t", "--test", action="store_true")
 
     return parser.parse_args()
 
 
-def test():
-    # setup_logging()
+def run_index_test():
+    test_index = DirIndex("test_index")
+    test_index.index_dir(config.PATH_A, normalize_line_endings=True)
+    test_index.index_dir(config.PATH_B, normalize_line_endings=True)
+    test_index.print_trait_indexes_to_file(config.OUTPUT_DIR_PATH)
+
+    test_index.find_compare()
+    test_index.print_comparison_to_file(config.OUTPUT_DIR_PATH)
+
+
+def run_full_test():
     test_index = DirIndex("test_index")
     test_index.index_dir(config.PATH_A, normalize_line_endings=True)
     test_index.index_dir(config.PATH_B, normalize_line_endings=True)
@@ -54,7 +66,8 @@ def test():
     test_index.print_comparison_to_file(config.OUTPUT_DIR_PATH)
 
     # test_index.resolve_matches()
-    test_index.resolve_diff()
+    # test_index.resolve_diff()
+    test_index.resolve_content_name_dup()
     test_index.print_union_to_file(config.OUTPUT_DIR_PATH)
 
 

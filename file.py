@@ -38,7 +38,7 @@ class File:
 
         # Compare traits
         same_name = self.name == other.name
-        same_path = self.rel_path == other.rel_path
+        same_path = self.rel_path.parent == other.rel_path.parent
         same_content = self.compare_content(other)
 
         # Assign comparison type

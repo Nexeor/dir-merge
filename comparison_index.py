@@ -28,6 +28,7 @@ class ComparisonIndex:
             msg.append(f"Key: {key}\n")
             for file in file_list:
                 msg.append(f"\t{file.name} ({file.rel_path})\n")
+                msg.append(f"\t\t{file.abs_path}\n")
         return "".join(msg)
 
     def print_to_file(self, output_dir: Path):
@@ -44,7 +45,7 @@ class ComparisonIndex:
 
         key_parts = {
             "name": comparison.fileA.name,
-            "path": comparison.fileA.rel_path,
+            "path": comparison.fileA.rel_path.parent,
             "content": comparison.fileA.quick_hash,
         }
         key = tuple(key_parts[part] for part in self.type.value)
