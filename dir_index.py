@@ -222,8 +222,6 @@ class DirIndex:
 
     def resolve_diff(self):
         for _, diffs in self.diffs.index.items():
-            # Choose which files to keep, asking if they want to rename
-            # If more than one file remaining, prompt to rename files
             self.logger.info(f"Resolving DIFF: {repr(diffs)}")
 
             # Display files
@@ -248,30 +246,7 @@ class DirIndex:
                     case 2:
                         comparing = False
 
-            # Ask how to resolve diff
-            msg = ["Choose how to resolve diff:"]
-            options = [
-                "Keep one",
-                "Keep all (system will auto-rename)",
-                "Generate line-by-line comparison",
-                "Delete all",
-            ]
-            user_choice = cli.prompt_user_options("\n".join(msg), options)
-            match user_choice:
-                case 1:
-                    msg = "Choose which file to keep"
-                    choices = [
-                        utils.make_link(diff_file.abs_path) for diff_file in diffs
-                    ]
-                    user_choice = cli.prompt_user_options(msg, choices)
-                    to_keep = diffs[user_choice]
-                    self.union[to_keep.rel_path].append(to_keep)
-                case 2:
-                    for i, diff_file in enumerate(diffs):
-                        diff_file.name = f"{diff_file.name}_v{i}"
-                        self.union[diff_file.rel_path].append(diff_file)
-                case 3:
-                    pass  # Intentionally do nothing
+            self._prompt_keep_options(diffs, link_paths=True)
 
     # Given a list of diff files, prompt the user to pick two to generate a diff from
     def _generate_line_by_line_diff(self, diffs: List[File]):
@@ -305,26 +280,7 @@ class DirIndex:
                 "CONTENT-NAME-DUP: Files have same content and name, but different path",
                 dups,
             )
-
-            msg = "Choose how to resolve dup:"
-            options = [
-                "Keep one path",
-                "Keep all paths",
-                "Delete all paths",
-            ]
-            user_choice = cli.prompt_user_options(msg, options)
-            match user_choice:
-                case 1:
-                    msg = "Choose which path to keep"
-                    choices = [dup_file.abs_path for dup_file in dups]
-                    user_choice = cli.prompt_user_options(msg, choices)
-                    to_keep = dups[user_choice]
-                    self.union[to_keep.rel_path].append(to_keep)
-                case 2:
-                    for i, dup_file in enumerate(dups):
-                        self.union[dup_file.rel_path].append(dup_file)
-                case 3:
-                    pass
+            self._prompt_keep_options(dups)
 
     def resolve_content_dup(self):
         for _, dups in self.content_dups.index.items():
@@ -335,21 +291,7 @@ class DirIndex:
                 file_list=dups,
             )
 
-            msg = "Choose how to resolve dup:"
-            options = ["Keep one file", "Keep all files", "Delete all files"]
-            user_choice = cli.prompt_user_options(msg, options)
-            match user_choice:
-                case 1:
-                    msg = "Choose which file to keep"
-                    choices = [dup_file.abs_path for dup_file in dups]
-                    user_choice = cli.prompt_user_options(msg, choices)
-                    to_keep = dups[user_choice]
-                    self.union[to_keep.rel_path].append(to_keep)
-                case 2:
-                    for i, dup_file in enumerate(dups):
-                        self.union[dup_file.rel_path].append(dup_file)
-                case 3:
-                    pass
+            self._prompt_keep_options(dups)
 
     def resolve_name_dup(self):
         for _, dups in self.name_dups.index.items():
@@ -361,20 +303,26 @@ class DirIndex:
                 file_list=dups,
             )
 
-            msg = "Chooose how to resolve dup:"
-            options = ["Keep one file", "Keep all files", "Delete all files"]
-            user_choice = cli.prompt_user_options(msg, options)
-            match user_choice:
-                case 1:
-                    msg = "Choose which file to keep"
-                    choices = [
-                        utils.make_link(diff_file.abs_path) for diff_file in dups
-                    ]
-                    user_choice = cli.prompt_user_options(msg, choices)
-                    to_keep = dups[user_choice]
-                    self.union[to_keep.rel_path].append(to_keep)
-                case 2:
-                    for i, dup_file in enumerate(dups):
-                        self.union[dup_file.rel_path].append(dup_file)
-                case 3:
-                    pass
+            self._prompt_keep_options(dups, link_paths=True)
+
+    def _prompt_keep_options(self, file_list: List[File], link_paths=False):
+        msg = "Choose how to resolve:"
+        options = ["Keep one", "Keep all (system will auto-rename)", "Delete all"]
+        user_choice = cli.prompt_user_options(msg, options)
+        match user_choice:
+            case 1:
+                msg = "Choose which file to keep"
+                choices = [
+                    (utils.make_link(file.abs_path) if link_paths else file.abs_path)
+                    for file in file_list
+                ]
+                user_choice = cli.prompt_user_options(msg, choices)
+                print(user_choice)
+                to_keep = file_list[user_choice]
+                self.union[to_keep.rel_path].append(to_keep)
+            case 2:
+                for i, file in enumerate(file_list):
+                    file.name = f"{file.name}_v{i}"
+                    self.union[file.rel_path].append(file)
+            case 3:
+                pass

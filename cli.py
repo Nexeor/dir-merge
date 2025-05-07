@@ -3,6 +3,7 @@ from prompt_toolkit.validation import Validator, ValidationError
 from typing import List
 
 from file import File
+import utils
 
 
 class NumberValidator(Validator):
@@ -16,16 +17,18 @@ class NumberValidator(Validator):
 def prompt_user_options(msg: str, options: List[str]) -> int:
     while True:  # Loop until valid input or exit
         try:
+            # Print the message then the options
             print(f"{msg}")
             for i, option in enumerate(options):
                 print(f"\t{i + 1}) {option}")
 
+            # Gather user input and validate
             user_input = int(prompt(">>> ", validator=NumberValidator()))
             if not (0 < user_input < len(options) + 1):
                 raise ValueError(
                     f"Value {user_input} is out of range. Must be between 1 and {len(options)}"
                 )
-            return user_input
+            return user_input - 1  # Adjust to 0-based indexing
         except (ValueError, ValidationError) as e:
             print(f"\nError: {e}")
         except EOFError:
