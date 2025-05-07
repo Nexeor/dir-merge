@@ -66,8 +66,10 @@ def run_full_test():
     test_index.print_comparison_to_file(config.OUTPUT_DIR_PATH)
 
     # test_index.resolve_matches()
-    # test_index.resolve_diff()
-    test_index.resolve_content_name_dup()
+    test_index.resolve_diff()
+    # test_index.resolve_content_name_dup()
+    # test_index.resolve_content_dup()
+    test_index.resolve_name_dup()
     test_index.print_union_to_file(config.OUTPUT_DIR_PATH)
 
 

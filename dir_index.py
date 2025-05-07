@@ -227,10 +227,10 @@ class DirIndex:
             self.logger.info(f"Resolving DIFF: {repr(diffs)}")
 
             # Display files
-            msg = ["DIFF: Files have the same name and path but have different content"]
-            for i, diff_file in enumerate(diffs, 1):
-                msg.append(f"{i}) {str(diff_file)}")
-            print("\n".join(msg))
+            cli.display_files(
+                "DIFF: Files have the same name and path but have different content",
+                diffs,
+            )
 
             # Ask for line-by-line DIFF until user continues
             msg = "Would you like to view a line-by-line comparison?"
@@ -301,12 +301,10 @@ class DirIndex:
         for _, dups in self.content_name_dups.index.items():
             self.logger.info(f"Resolving content-name dup: {repr(dups)}")
 
-            msg = [
-                "CONTENT-NAME-DUP: Files have same content and name, but different path"
-            ]
-            for i, dup_file in enumerate(dups, 1):
-                msg.append(f"{i}) {str(dup_file)}")
-            print("\n".join(msg))
+            cli.display_files(
+                "CONTENT-NAME-DUP: Files have same content and name, but different path",
+                dups,
+            )
 
             msg = "Choose how to resolve dup:"
             options = [
@@ -329,15 +327,13 @@ class DirIndex:
                     pass
 
     def resolve_content_dup(self):
-        for _, dups in self.name_dups.index.items():
+        for _, dups in self.content_dups.index.items():
             self.logger.info(f"Resolving content dup: {repr(dups)}")
 
-            msg = [
-                "CONTENT-DUP: Files have same content, but have different name and path"
-            ]
-            for i, dup_file in enumerate(dups, 1):
-                msg.append(f"{i}) {str(dup_file)}")
-            print("\n".join(msg))
+            cli.display_files(
+                msg="CONTENT-DUP: Files have same content, but have different name and path",
+                file_list=dups,
+            )
 
             msg = "Choose how to resolve dup:"
             options = ["Keep one file", "Keep all files", "Delete all files"]
@@ -346,6 +342,34 @@ class DirIndex:
                 case 1:
                     msg = "Choose which file to keep"
                     choices = [dup_file.abs_path for dup_file in dups]
+                    user_choice = cli.prompt_user_options(msg, choices)
+                    to_keep = dups[user_choice]
+                    self.union[to_keep.rel_path].append(to_keep)
+                case 2:
+                    for i, dup_file in enumerate(dups):
+                        self.union[dup_file.rel_path].append(dup_file)
+                case 3:
+                    pass
+
+    def resolve_name_dup(self):
+        for _, dups in self.name_dups.index.items():
+            print(type(dups))
+            self.logger.info(f"Resolving name dup: {repr(dups)}")
+
+            cli.display_files(
+                msg="NAME-DUP: Files have same name, but different content and path",
+                file_list=dups,
+            )
+
+            msg = "Chooose how to resolve dup:"
+            options = ["Keep one file", "Keep all files", "Delete all files"]
+            user_choice = cli.prompt_user_options(msg, options)
+            match user_choice:
+                case 1:
+                    msg = "Choose which file to keep"
+                    choices = [
+                        utils.make_link(diff_file.abs_path) for diff_file in dups
+                    ]
                     user_choice = cli.prompt_user_options(msg, choices)
                     to_keep = dups[user_choice]
                     self.union[to_keep.rel_path].append(to_keep)

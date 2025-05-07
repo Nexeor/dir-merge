@@ -2,6 +2,8 @@ from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator, ValidationError
 from typing import List
 
+from file import File
+
 
 class NumberValidator(Validator):
     def validate(self, document):
@@ -29,6 +31,13 @@ def prompt_user_options(msg: str, options: List[str]) -> int:
         except EOFError:
             print("\nEOF recieved. Exiting")
             exit(0)
+
+
+def display_files(msg, file_list: List[File]):
+    msg = [msg]
+    for i, file in enumerate(file_list, 1):
+        msg.append(f"{i}) {str(file)}")
+    print("\n".join(msg))
 
 
 def run_prompt():
