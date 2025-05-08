@@ -3,7 +3,6 @@ from prompt_toolkit.validation import Validator, ValidationError
 from typing import List
 
 from file import File
-import utils
 
 
 class NumberValidator(Validator):

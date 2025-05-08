@@ -1,0 +1,1 @@
+DIFF TEST: This file has the same path and name, but different content

@@ -1,0 +1,3 @@
+NAME DUP: Different path and content, but same name
+
+THIS LINE MAKES CONTENT DIFFERENT
