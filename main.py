@@ -20,7 +20,8 @@ def main():
     setup_logging()
     args = parse_args()
     if args.mode == "test":  # Parse pre-determined dirs
-        paths = [config.TEST_PATH_A, config.TEST_PATH_B]
+        base_dir = Path(__file__).resolve().parent
+        paths = [base_dir / config.TEST_PATH_A, base_dir / config.TEST_PATH_B]
         print("Running test mode on predefined test dirs")
         index_dirs(paths)
     elif args.mode == "repl":  # Ask user for dirs interactively

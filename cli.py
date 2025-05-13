@@ -19,9 +19,10 @@ class UserOptionValidator(Validator):
             )
         # Check that input is valid range
         user_input = int(user_input)
-        if not (0 < user_input < len(self.num_options) + 1):
+        if not (0 < user_input < self.num_options + 1):
             raise ValidationError(
-                f"Value {user_input} is out of range. Must be between 1 and {len(self.num_options)}"
+                message=f"Value {user_input} is out of range. Must be between 1 and {self.num_options}",
+                cursor_position=len(document.text),
             )
 
 
