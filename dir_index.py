@@ -244,6 +244,8 @@ class DirIndex:
                         diff_log = self._generate_line_by_line_diff(diffs)
                         for line in diff_log:
                             print(line)
+                        if len(diffs) == 2:
+                            comparing = False
                     # Continue
                     case 2:
                         comparing = False
@@ -254,7 +256,6 @@ class DirIndex:
     def _generate_line_by_line_diff(self, diffs: List[File]):
         to_compare: List[File] = []
         if len(diffs) == 2:
-            print("Only two diffs")
             to_compare = [diffs[0], diffs[1]]
         else:
             for i in range(2):
@@ -273,7 +274,6 @@ class DirIndex:
         diff_log = utils.check_file_diff(to_compare[0].abs_path, to_compare[1].abs_path)
         if not diff_log:
             print("No differences found?")
-        print("Generating diff log")
         return diff_log
 
     def resolve_content_name_dup(self):

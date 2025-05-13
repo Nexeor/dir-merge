@@ -38,7 +38,7 @@ def prompt_user_options(msg: str, options: List[str]) -> int:
             user_input = int(
                 prompt(">>> ", validator=UserOptionValidator(num_options=len(options)))
             )
-            return user_input - 1  # Adjust to 0-based indexing
+            return user_input
         except ValidationError as e:
             print(f"\nError: {e}")
 
