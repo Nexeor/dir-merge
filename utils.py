@@ -4,16 +4,13 @@ import difflib
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import quote
-from typing import Dict
-
-from config import PATH_A, PATH_B, OUTPUT_DIR_PATH
 
 
 # Match given path to a base path and extract the relative path
-def get_relative_to_base_path(full_path):
+def get_relative_to_base_path(base_paths, full_path):
     path = Path(full_path)
 
-    for base in [PATH_A, PATH_B]:
+    for base in base_paths:
         if path.is_relative_to(base):
             return path.relative_to(base)
 

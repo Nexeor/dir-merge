@@ -65,7 +65,7 @@ class InputDirValidator(Validator):
             )
 
 
-def prompt_input_dirs():
+def prompt_input_dirs() -> List[Path]:
     """Prompt the user for any number of input dirs to add to the index"""
     input_dirs = []
     validator = InputDirValidator()

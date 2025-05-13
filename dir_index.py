@@ -17,6 +17,7 @@ class DirIndex:
     def __init__(self, name, name_index=None, size_index=None):
         self.name = name
         self.logger = logging.getLogger(__name__)
+        self.base_dir_paths = []
 
         # Common trait indexes
         self.all_files: List[File] = []
@@ -112,6 +113,7 @@ class DirIndex:
     def index_dir(self, base_dir_path, normalize_line_endings=False):
         # Recursively iterate over filetree and add to index
         base_dir_path = Path(base_dir_path)
+        self.base_dir_paths.append(base_dir_path)
         for abs_path in base_dir_path.rglob("*"):
             if not utils.is_hidden(abs_path):
                 if abs_path.is_file():
