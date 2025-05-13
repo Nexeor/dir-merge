@@ -222,6 +222,12 @@ class DirIndex:
             to_keep: File = matches[0]
             self.union[to_keep.rel_path].append(to_keep)
 
+    def resolve_unique(self):
+        for unique in self.unique:
+            unique: File
+            self.logger.info(f"Resolving UNIQUE: {repr(unique)}")
+            self.union[unique.rel_path].append(unique)
+
     def resolve_diff(self):
         for _, diffs in self.diffs.index.items():
             self.logger.info(f"Resolving DIFF: {repr(diffs)}")
@@ -281,8 +287,17 @@ class DirIndex:
             self.logger.info(f"Resolving content-name dup: {repr(dups)}")
 
             cli.display_files(
-                "CONTENT-NAME-DUP: Files have same content and name, but different path",
-                dups,
+                msg="CONTENT-NAME-DUP: Files have same content and name, but different path",
+                file_list=dups,
+            )
+            self._prompt_keep_options(dups)
+
+    def resolve_content_path_dup(self):
+        for _, dups in self.content_path_dups.index.items():
+            self.logger.info(f"Resolving content-path dup: {repr(dups)}")
+            cli.display_files(
+                msg="CONTENT-PATH-DUP: Files have the same content and path, but different name",
+                file_list=dups,
             )
             self._prompt_keep_options(dups)
 
@@ -321,8 +336,7 @@ class DirIndex:
                     for file in file_list
                 ]
                 user_choice = cli.prompt_user_options(msg, choices)
-                print(user_choice)
-                to_keep = file_list[user_choice]
+                to_keep = file_list[user_choice - 1]  # Adjust for 0-based indexing
                 self.union[to_keep.rel_path].append(to_keep)
             case 2:
                 for i, file in enumerate(file_list):

@@ -83,11 +83,21 @@ def index_dirs(paths: List[Path]):
     index.find_compare()
     index.print_comparison_to_file(config.OUTPUT_DIR_PATH)
 
+    # Everything matches
     index.resolve_matches()
-    index.resolve_diff()
-    index.resolve_content_name_dup()
-    index.resolve_content_dup()
-    index.resolve_name_dup()
+
+    # Two things match
+    index.resolve_diff()  # Same name and path (different content)
+    index.resolve_content_name_dup()  # Same name and content (different path)
+    index.resolve_content_path_dup()  # Same path and content (different name)
+
+    # One thing matches
+    index.resolve_name_dup()  # Same name
+    index.resolve_content_dup()  # Same content
+
+    # Nothing matches
+    index.resolve_unique()
+
     index.print_union_to_file(config.OUTPUT_DIR_PATH)
 
 
