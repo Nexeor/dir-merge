@@ -31,13 +31,13 @@ class DirIndex:
         self.matches = ComparisonIndex("MATCH", ComparisonResult.MATCH)
         self.diffs = ComparisonIndex("DIFF", ComparisonResult.DIFF)
         self.content_name_dups = ComparisonIndex(
-            "CONTENT-NAME-DUP", ComparisonResult.CONTENT_NAME_DUP
+            "CONTENT_NAME_DUP", ComparisonResult.CONTENT_NAME_DUP
         )
         self.content_path_dups = ComparisonIndex(
-            "CONTENT-PATH-DUP", ComparisonResult.CONTENT_PATH_DUP
+            "CONTENT_PATH_DUP", ComparisonResult.CONTENT_PATH_DUP
         )
-        self.name_dups = ComparisonIndex("NAME-DUP", ComparisonResult.NAME_DUP)
-        self.content_dups = ComparisonIndex("CONTENT-DUP", ComparisonResult.CONTENT_DUP)
+        self.name_dups = ComparisonIndex("NAME_DUP", ComparisonResult.NAME_DUP)
+        self.content_dups = ComparisonIndex("CONTENT_DUP", ComparisonResult.CONTENT_DUP)
         self.unique: List[File] = []  # List of "unique" files
 
         # Union index { rel_path : File }
@@ -277,7 +277,7 @@ class DirIndex:
                     [diff_file.abs_path for diff_file in diff_files],
                 )
                 to_compare.append(diff_files[user_choice])
-        diff_log = utils.check_file_diff(to_compare[0].abs_path, to_compare[1].abs_path)
+        diff_log = utils.make_file_diff(to_compare[0].abs_path, to_compare[1].abs_path)
         if not diff_log:
             print("No differences found?")
         return diff_log

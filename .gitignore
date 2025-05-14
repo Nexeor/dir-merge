@@ -2,7 +2,6 @@ __pycache__/
 combined/
 temp_clone/
 .results/
-test_dirs/temp_clone_local
-test_dirs/temp_clone_remote
+testing/real_dirs/
 diff.txt
 out.txt

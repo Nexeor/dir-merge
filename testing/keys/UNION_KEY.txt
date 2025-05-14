@@ -1,0 +1,49 @@
+index
+same_path\match-test.txt:
+	File: match-test.txt
+	Relative Path: same_path\match-test.txt
+	Size: 58
+	View File: file://C%3A/Users/trjji/Documents/Coding%20Projects/obsidian-helpers/testing/test_dirs/test_dir_one/same_path/match-test.txt
+
+same_path\diff-test.txt:
+	File: diff-test.txt
+	Relative Path: same_path\diff-test.txt
+	Size: 70
+	View File: file://C%3A/Users/trjji/Documents/Coding%20Projects/obsidian-helpers/testing/test_dirs/test_dir_one/same_path/diff-test.txt
+
+diff_path_one\content-name-dup-test.txt:
+	File: content-name-dup-test.txt
+	Relative Path: diff_path_one\content-name-dup-test.txt
+	Size: 75
+	View File: file://C%3A/Users/trjji/Documents/Coding%20Projects/obsidian-helpers/testing/test_dirs/test_dir_one/diff_path_one/content-name-dup-test.txt
+
+same_path\content-path-test-one.txt:
+	File: content-path-test-one.txt
+	Relative Path: same_path\content-path-test-one.txt
+	Size: 79
+	View File: file://C%3A/Users/trjji/Documents/Coding%20Projects/obsidian-helpers/testing/test_dirs/test_dir_one/same_path/content-path-test-one.txt
+
+diff_path_one\name-dup-test.txt:
+	File: name-dup-test.txt
+	Relative Path: diff_path_one\name-dup-test.txt
+	Size: 51
+	View File: file://C%3A/Users/trjji/Documents/Coding%20Projects/obsidian-helpers/testing/test_dirs/test_dir_one/diff_path_one/name-dup-test.txt
+
+diff_path_one\content-dup-test-one.txt:
+	File: content-dup-test-one.txt
+	Relative Path: diff_path_one\content-dup-test-one.txt
+	Size: 72
+	View File: file://C%3A/Users/trjji/Documents/Coding%20Projects/obsidian-helpers/testing/test_dirs/test_dir_one/diff_path_one/content-dup-test-one.txt
+
+diff_path_one\unique-test-one.txt:
+	File: unique-test-one.txt
+	Relative Path: diff_path_one\unique-test-one.txt
+	Size: 54
+	View File: file://C%3A/Users/trjji/Documents/Coding%20Projects/obsidian-helpers/testing/test_dirs/test_dir_one/diff_path_one/unique-test-one.txt
+
+diff_path_two\unique-test-two.txt:
+	File: unique-test-two.txt
+	Relative Path: diff_path_two\unique-test-two.txt
+	Size: 95
+	View File: file://C%3A/Users/trjji/Documents/Coding%20Projects/obsidian-helpers/testing/test_dirs/test_dir_two/diff_path_two/unique-test-two.txt
+

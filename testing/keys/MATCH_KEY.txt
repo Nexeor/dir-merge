@@ -1,0 +1,6 @@
+ComparisonIndex: MATCH (Type: ComparisonResult.MATCH)
+Key: (WindowsPath('same_path'), 'match-test.txt', 'c14287ed22b9f947cf58e908993e784e')
+	match-test.txt (same_path\match-test.txt)
+		C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\testing\test_dirs\test_dir_one\same_path\match-test.txt
+	match-test.txt (same_path\match-test.txt)
+		C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\testing\test_dirs\test_dir_two\same_path\match-test.txt

@@ -4,6 +4,7 @@ import difflib
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import quote
+from typing import Optional, List
 
 
 # Match given path to a base path and extract the relative path
@@ -20,15 +21,19 @@ def get_relative_to_base_path(base_paths, full_path):
 
 
 # Given two file paths, check if they contain the same content
-def check_file_diff(path_a, path_b):
+def make_file_diff(path_a: Path, path_b: Path) -> Optional[List[str]]:
     diff_log = None
-    if not filecmp.cmp(path_a, path_b, shallow=False):
-        base_content = path_a.read_text().splitlines(keepends=True)
-        comp_content = path_b.read_text().splitlines(keepends=True)
 
-        diff_log = list(
-            difflib.unified_diff(base_content, comp_content, str(path_a), str(path_b))
-        )
+    if filecmp.cmp(path_a, path_b, shallow=False):
+        return None
+
+    base_content = path_a.read_text(encoding="utf-8").splitlines(keepends=True)
+    comp_content = path_b.read_text(encoding="utf-8").splitlines(keepends=True)
+
+    diff_log = list(
+        difflib.unified_diff(base_content, comp_content, str(path_a), str(path_b))
+    )
+
     return diff_log
 
 

@@ -1,0 +1,6 @@
+ComparisonIndex: CONTENT_PATH_DUP (Type: ComparisonResult.CONTENT_PATH_DUP)
+Key: ('80748dd3d45d7c886adc06719dd0cc74', WindowsPath('same_path'))
+	content-path-test-one.txt (same_path\content-path-test-one.txt)
+		C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\testing\test_dirs\test_dir_one\same_path\content-path-test-one.txt
+	content-path-test-two.txt (same_path\content-path-test-two.txt)
+		C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\testing\test_dirs\test_dir_two\same_path\content-path-test-two.txt

@@ -1,0 +1,6 @@
+ComparisonIndex: CONTENT_DUP (Type: ComparisonResult.CONTENT_DUP)
+Key: ('987922281d51436fe31ed1c3ee98f9c4',)
+	content-dup-test-one.txt (diff_path_one\content-dup-test-one.txt)
+		C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\testing\test_dirs\test_dir_one\diff_path_one\content-dup-test-one.txt
+	content-dup-test-two.txt (diff_path_two\content-dup-test-two.txt)
+		C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\testing\test_dirs\test_dir_two\diff_path_two\content-dup-test-two.txt
