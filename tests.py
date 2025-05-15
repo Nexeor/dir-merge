@@ -1,22 +1,22 @@
 import unittest
-from unittest.mock import patch
 from pathlib import Path
-from prompt_toolkit import prompt
 
 import config
 from comparison import ComparisonResult
-from main import index_dirs
 from utils import make_file_diff
 from typing import Optional
 
 
+# Generate test logs:
+# Run this test suite with: python -m unittest tests.py
 class TestUnion(unittest.TestCase):
+    """
+    Test that the most recent union files for each comparison type
+    match their respective key files exactly.
+    """
+
     def setUp(self):
         self.base_dir = Path(__file__).resolve().parent
-        """
-        test_inputs = ["2", "1", "1", "1", "1", "1", "1", "1", "1", "1"]
-        with patch("prompt_toolkit.prompt", side_effects=test_inputs):
-        index_dirs(config.TEST_PATH_A, config.TEST_PATH_B) """
 
     def test_build_union(self):
         for comparison_type in ComparisonResult:
