@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from dir_merge_runner import index_from_args, index_from_prompt
+from dir_merge_runner import index_from_paths, index_from_prompt
 from log_config import setup_logging
 
 
@@ -17,7 +17,7 @@ def main():
     if not args.dirs:
         index_from_prompt()
     else:
-        index_from_args(args.dirs)
+        index_from_paths(args.dirs)
 
 
 def parse_args():

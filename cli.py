@@ -78,7 +78,7 @@ def prompt_input_dirs() -> List[Path]:
             "Type 'done' when finished or 'list' to view all added directories\n",
         )
         try:
-            user_input = prompt(">>> ", validator)
+            user_input = prompt(">>> ", validator=validator)
             if user_input in validator.keywords:  # Handle keywords
                 match user_input:
                     case "done":
@@ -88,11 +88,11 @@ def prompt_input_dirs() -> List[Path]:
                             return input_dirs
                     case "list":
                         msg = ["Added directories: "]
-                        for i, dir in enumerate(input_dirs):
+                        for i, dir in enumerate(input_dirs, 1):
                             msg.append(f"\t{i}) {dir}")
                         print("\n".join(msg))
             else:  # Handle paths
-                input_dirs.append(user_input)
+                input_dirs.append(Path(user_input))
         except ValidationError as e:
             print(f"\nError: {e}")
 
@@ -102,10 +102,3 @@ def display_files(msg, file_list: List[File]):
     for i, file in enumerate(file_list, 1):
         msg.append(f"{i}) {str(file)}")
     print("\n".join(msg))
-
-
-def run_prompt():
-    # Prompt user for input dirs
-    # Add files to dir_index
-    # Find matches
-    return True

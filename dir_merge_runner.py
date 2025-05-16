@@ -4,15 +4,17 @@ from pathlib import Path
 
 import config
 import utils
+import cli
 from dir_index import DirIndex
 
 
 def index_from_prompt():
-    return 0
+    input_dirs = cli.prompt_input_dirs()
+    index_from_paths(input_dirs)
 
 
-def index_from_args(dir_paths: List[Path]):
-    setup_dirs(dir_paths)
+def index_from_paths(dir_paths: List[Path]):
+    check_dirs_exist(dir_paths)
     print("All target dirs exist, beginning indexing...\n")
 
     index = DirIndex("index")
@@ -42,7 +44,7 @@ def index_from_args(dir_paths: List[Path]):
 
 
 # Ensure that the output directories exist
-def setup_dirs(input_paths: List[Path]):
+def check_dirs_exist(input_paths: List[Path]):
     # Check that input directories are present
     for path in input_paths:
         print(f"Checking if target dir {path} exists...")
