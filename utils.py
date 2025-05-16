@@ -25,6 +25,7 @@ def make_file_diff(path_a: Path, path_b: Path) -> Optional[List[str]]:
     diff_log = None
 
     if filecmp.cmp(path_a, path_b, shallow=False):
+        print("Files are the same")
         return None
 
     base_content = path_a.read_text(encoding="utf-8").splitlines(keepends=True)
@@ -34,6 +35,7 @@ def make_file_diff(path_a: Path, path_b: Path) -> Optional[List[str]]:
         difflib.unified_diff(base_content, comp_content, str(path_a), str(path_b))
     )
 
+    print("Files are not the same")
     return diff_log
 
 
