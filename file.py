@@ -1,7 +1,7 @@
 import hashlib
 
 from pathlib import Path
-from comparison import Comparison, ComparisonResult
+from comparison import Comparison, CompType
 
 from utils import make_link
 
@@ -32,31 +32,29 @@ class File:
 
         return "\n".join(msg)
 
-    def compare_to(self, other: "File") -> Comparison:
+    def compare_to(self, other: "File") -> CompType:
         if self is other:
             raise ValueError(f"Attempted to compare file {repr(self)} to itself")
 
         # Compare traits
         same_name = self.name == other.name
         same_path = self.rel_path.parent == other.rel_path.parent
-        same_content = self.compare_content(other)
+        same_content = self._compare_content(other)
 
         # Assign comparison type
-        if same_name and same_path and same_content:
-            return Comparison(self, other, ComparisonResult.MATCH)
-        if same_name and same_path and not same_content:
-            return Comparison(self, other, ComparisonResult.DIFF)
-        if same_content and same_name and not same_path:
-            return Comparison(self, other, ComparisonResult.CONTENT_NAME_DUP)
-        if same_content and same_path and not same_name:
-            return Comparison(self, other, ComparisonResult.CONTENT_PATH_DUP)
-        if same_name and not same_path and not same_content:
-            return Comparison(self, other, ComparisonResult.NAME_DUP)
-        if same_content and not same_path and not same_name:
-            return Comparison(self, other, ComparisonResult.CONTENT_DUP)
-        return Comparison(self, other, ComparisonResult.UNIQUE)
+        for comp_type in CompType:
+            traits = comp_type.value
+            if (
+                traits["path"] == same_path
+                and traits["name"] == same_name
+                and traits["content"] == same_content
+            ):
+                return comp_type
+        raise ValueError(
+            f"No valid CompType found for comparison between {repr(self)} and {repr(other)}"
+        )
 
-    def compare_content(self, other: "File"):
+    def _compare_content(self, other: "File"):
         # Quick size check
         if self.size != other.size:
             return False

@@ -3,27 +3,24 @@ from pathlib import Path
 from collections import defaultdict
 
 import utils
-from comparison import Comparison, ComparisonResult
+from comparison import Comparison, CompType
 from file import File
 
 
 class ComparisonIndex:
-    def __init__(self, name, comparison_type):
-        self.name = name
-        self.type: ComparisonResult = (
-            comparison_type  # The comparison type this index holds
-        )
+    def __init__(self, comparison_type: CompType):
+        self.type = comparison_type
         self.index = defaultdict(list[File])
 
     def __repr__(self):
         return (
-            f"ComparisonIndex(name={self.name!r}, type={self.type}, "
+            f"ComparisonIndex(name={self.type.name!r}"
             f"entries={sum(len(v) for v in self.index.values())}, "
             f"keys={len(self.index)})"
         )
 
     def __str__(self):
-        msg = [f"ComparisonIndex: {self.name} (Type: {self.type})\n"]
+        msg = [f"ComparisonIndex: {self.type.name}\n"]
         for key, file_list in self.index.items():
             msg.append(f"Key: {key}\n")
             for file in file_list:
@@ -31,9 +28,9 @@ class ComparisonIndex:
                 msg.append(f"\t\t{file.abs_path}\n")
         return "".join(msg)
 
-    def print_to_file(self, output_dir: Path):
+    def write_to_file(self, output_dir: Path):
         utils.write_to_file(
-            self.name, output_dir / self.name, str(self), is_timestamped=True
+            self.type, output_dir / self.type, str(self), is_timestamped=True
         )
 
     def add_comparison(self, comparison: Comparison):
@@ -43,14 +40,10 @@ class ComparisonIndex:
             )
         logging.info(str(comparison))
 
-        key_parts = {
-            "name": comparison.fileA.name,
-            "path": comparison.fileA.rel_path.parent,
-            "content": comparison.fileA.quick_hash,
-        }
-        key = tuple(key_parts[part] for part in self.type.value)
+        key_traits = tuple(
+            trait for trait, is_key in comparison.comp_type.value.items() if is_key
+        )
 
-        index_entry = self.index[key]
         for file in [comparison.fileA, comparison.fileB]:
-            if file not in index_entry:
-                index_entry.append(file)
+            if file not in self.index[key_traits]:
+                self.index[key_traits]
