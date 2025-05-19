@@ -1,49 +1,37 @@
-import os
 import logging
 
 from pathlib import Path
-from datetime import datetime
 from collections import defaultdict
-from typing import List, Dict, Tuple
+from typing import List, Dict
 
 import utils
-import cli
 from file import File
-from comparison import Comparison, ComparisonResult
-from comparison_index import ComparisonIndex
 
 
 class DirIndex:
-    def __init__(self, name, name_index=None, size_index=None):
-        self.name = name
+    def __init__(self, name_index=None, size_index=None):
         self.logger = logging.getLogger(__name__)
         self.base_dir_paths = []
 
-        # Common trait indexes
+        # List all files in index
         self.file_list: List[File] = []
+
+        # Trait indexes
         self.name_index: Dict[str : List[File]] = name_index or defaultdict(list)
         self.size_index: Dict[int : List[File]] = size_index or defaultdict(list)
 
-        # Cache for already seen comparisons
-        self.comparison_cache: Dict[Tuple(File, File) : Comparison] = defaultdict(list)
-
-        # Union index { rel_path : File }
-        self.union: Dict[Path : List[File]] = defaultdict(list)
-
     def __repr__(self):
         return (
-            f"DirIndex(name={self.name!r}, "
-            f"files_indexed={len(self.file_list)}, "
-            f"unique_files={len(self.unique)}, "
-            f"comparisons_cached={len(self.comparison_cache)})"
+            f"file_count={len(self.file_list)}, "
+            f"name_index_keys={len(self.name_index)}, "
+            f"size_index_keys={len(self.size_index)})"
         )
 
     def __str__(self):
         return (
-            f"DirIndex '{self.name}': "
             f"{len(self.file_list)} files indexed, "
-            f"{len(self.unique)} unique, "
-            f"{len(self.comparison_cache)} comparisons cached"
+            f"{len(self.name_index)} name keys, "
+            f"{len(self.size_index)} size keys"
         )
 
     def print_trait_indexes_to_file(self, output_dir: Path):
@@ -55,12 +43,9 @@ class DirIndex:
         for name, index in indexes.items():
             self._print_index_to_file(name, index, output_dir)
 
-    def print_union_to_file(self, output_dir: Path):
-        self._print_index_to_file("UNION", self.union, output_dir)
-
     def _print_index_to_file(self, index_name: str, index: Dict, output_dir: Path):
         # Generate the string of this index
-        msg = [f"{self.name}\n"]
+        msg = []
         for key, file_list in index.items():
             msg.append(f"{key}:\n")
             for file in file_list:

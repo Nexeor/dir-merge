@@ -1,7 +1,10 @@
 import logging
+from collections import defaultdict
 from typing import List, Dict, Tuple
+from pathlib import Path
 
 import cli
+import utils
 from file import File
 from dir_index import DirIndex
 from comparison_index import ComparisonIndex
@@ -9,22 +12,44 @@ from comparison import Comparison, CompType
 
 
 class ComparisonManager:
-    def __init__(self, name):
+    def __init__(self):
         # Create a ComparisonIndex for each CompType
         self.comparisons: Dict[CompType:Comparison] = {}
         for type in CompType:
-            self.comparisons[type.name] = ComparisonIndex(type)
+            self.comparisons[type] = ComparisonIndex(type)
 
-        self.comparison_cache: Dict[Tuple[File, File] : Comparison]
+        self.comparison_cache: Dict[Tuple[File, File] : Comparison] = defaultdict
         self.unique: List[File] = []  # List of "unique" files
 
-    def write_str_to_file(self, name):
-        for comp_type in CompType:
-            ComparisonIndex.write_to_file()
+    def __repr__(self):
+        return (
+            f"ComparisonManager(comparison_types={list(self.comparisons.keys())}, "
+            f"cached_comparisons={len(getattr(self, 'comparison_cache', {}))}, "
+            f"unique_files={len(self.unique)})"
+        )
+
+    def __str__(self):
+        return (
+            f"ComparisonManager managing {len(self.unique)} unique files "
+            f"and {len(getattr(self, 'comparison_cache', {}))} cached comparisons "
+            f"across {len(self.comparisons)} comparison types"
+        )
+
+    def write_to_file(self, output_path: Path):
+        for type, index in self.comparisons.items():
+            index.write_to_file(output_path)
+
+        # Gather unique files and write to file
+        utils.write_to_file(
+            filename="UNIQUE",
+            output_dir=output_path.parent / "UNIQUE",
+            msg=str("\n".join(map(str, self.unique))),
+            is_timestamped=True,
+        )
 
     # Given a valid DirIndex, compare the files within that DirIndex and
     # add the comparisons to the manager
-    def compare_files(self, dir_index: DirIndex):
+    def add_dir_index(self, dir_index: DirIndex):
         for file in dir_index.file_list:
             logging.info(f"\nAnalyzing {file}")
 
@@ -75,6 +100,13 @@ class ComparisonManager:
         self.comparisons[comparison.comp_type].add_comparison(comparison)
         self.comparison_cache[(file_a, file_b)] = comparison
 
+    def resolve_all(self):
+        for type in CompType:
+            if type == CompType.MATCH:
+                self.resolve_matches()
+            else:
+                self.resolve_dups(type)
+
     def resolve_matches(self):
         match_index: ComparisonIndex = self.comparisons[CompType.MATCH]
         for key, matches in match_index.index.items():
@@ -85,83 +117,13 @@ class ComparisonManager:
             # Only keep one of the matches for each comparison
             match_index[key] = matches[0]
 
-    def resolve_path_name_dup(self):
-        path_name_index: ComparisonIndex = self.comparisons[CompType.PATH_NAME_DUP]
-        for key, dup_list in path_name_index.index.items():
-            logging.info(f"Resolving PATH-NAME Dup: {repr(dup_list)}")
+    def resolve_dups(self, type: CompType):
+        comparison_index: ComparisonIndex = self.comparisons[type]
+        for key, dup_list in comparison_index.index.items():
+            logging.info(f"Resolving {type.name} dup: {repr(dup_list)}")
 
-            # Display files
-            cli.display_files(
-                msg="PATH-NAME DUP: Files have the same name and path but have different content",
-                file_list=dup_list,
-            )
-            cli.prompt_build_diff(dup_list)
+            cli.display_files(msg=f"Resolving {type.name} dup", file_list=dup_list)
+            if not type["content"]:
+                cli.prompt_build_diff(dup_list)
             user_choice = cli.prompt_keep_options(dup_list, link_paths=True)
-
-            # TODO: Resolve user choice
-
-    # Given a list of diff files, prompt the user to pick two to generate a diff from
-    def _generate_line_by_line_diff(self, diffs: List[File]):
-        to_compare: List[File] = []
-        if len(diffs) == 2:
-            to_compare = [diffs[0], diffs[1]]
-        else:
-            for i in range(2):
-                msg = f"Choose {'first' if i == 0 else 'second'} file to compare"
-                diff_files = [
-                    diff_file
-                    for diff_file in diffs
-                    if diff_file.abs_path not in to_compare
-                ]
-
-                user_choice = cli.prompt_user_options(
-                    msg,
-                    [diff_file.abs_path for diff_file in diff_files],
-                )
-                to_compare.append(diff_files[user_choice])
-        diff_log = utils.make_file_diff(to_compare[0].abs_path, to_compare[1].abs_path)
-        if not diff_log:
-            print("No differences found?")
-        return diff_log
-
-    def resolve_content_name_dup(self):
-        for _, dups in self.content_name_dups.index.items():
-            logging.info(f"Resolving content-name dup: {repr(dups)}")
-
-            cli.display_files(
-                msg="CONTENT-NAME-DUP: Files have same content and name, but different path",
-                file_list=dups,
-            )
-            self._prompt_keep_options(dups)
-
-    def resolve_content_path_dup(self):
-        for _, dups in self.content_path_dups.index.items():
-            logging.info(f"Resolving content-path dup: {repr(dups)}")
-            cli.display_files(
-                msg="CONTENT-PATH-DUP: Files have the same content and path, but different name",
-                file_list=dups,
-            )
-            self._prompt_keep_options(dups)
-
-    def resolve_content_dup(self):
-        for _, dups in self.content_dups.index.items():
-            logging.info(f"Resolving content dup: {repr(dups)}")
-
-            cli.display_files(
-                msg="CONTENT-DUP: Files have same content, but have different name and path",
-                file_list=dups,
-            )
-
-            self._prompt_keep_options(dups)
-
-    def resolve_name_dup(self):
-        for _, dups in self.name_dups.index.items():
-            print(type(dups))
-            logging.info(f"Resolving name dup: {repr(dups)}")
-
-            cli.display_files(
-                msg="NAME-DUP: Files have same name, but different content and path",
-                file_list=dups,
-            )
-
-            self._prompt_keep_options(dups, link_paths=True)
+            comparison_index[key] = user_choice

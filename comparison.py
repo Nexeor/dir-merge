@@ -22,10 +22,12 @@ class Comparison:
         # No shared traits
         UNIQUE = {"path": False, "name": False, "content": False}
 
-    def __init__(self, fileA: File, fileB: File):
+    def __init__(self, fileA, fileB):
+        from file import File
+
         self.fileA: File = fileA
         self.fileB: File = fileB
-        self.comp_type: CompType = fileA.compare_to(fileB)
+        self.comp_type: CompType = self.compare_files(fileA, fileB)
 
     def __repr__(self):
         return (
@@ -39,6 +41,28 @@ class Comparison:
             f"Comparison Type: {self.type.name}\n"
             f"File A: {self.fileA.name} ({self.fileA.rel_path})\n"
             f"File B: {self.fileB.name} ({self.fileB.rel_path})"
+        )
+
+    def compare_files(file_a: File, file_b: File) -> CompType:
+        if file_a is file_b:
+            raise ValueError(f"Attempted to compare file {repr(file_a)} to itself")
+
+        # Compare traits
+        same_name = file_a.name == file_b.name
+        same_path = file_a.rel_path.parent == file_b.rel_path.parent
+        same_content = file_a.compare_content(file_b)
+
+        # Assign comparison type
+        for comp_type in CompType:
+            traits = comp_type.value
+            if (
+                traits["path"] == same_path
+                and traits["name"] == same_name
+                and traits["content"] == same_content
+            ):
+                return comp_type
+        raise ValueError(
+            f"No valid CompType found for comparison between {repr(file_a)} and {repr(file_b)}"
         )
 
 

@@ -4,8 +4,8 @@ from pathlib import Path
 
 import config
 import utils
-from dir_merge_runner import index_from_args
-from comparison import ComparisonResult
+from dir_merge_runner import index_from_paths
+from comparison import CompType
 from typing import Optional
 
 
@@ -26,12 +26,12 @@ class TestUnion(unittest.TestCase):
         self.mock_prompt = self.patcher.start()  # 👈 PATCH APPLIES HERE
         self.addCleanup(self.patcher.stop)
 
-        index_from_args(
+        index_from_paths(
             [(self.base_dir / config.TEST_PATH_A), (self.base_dir / config.TEST_PATH_B)]
         )
 
     def test_build_union(self):
-        for comparison_type in ComparisonResult:
+        for comparison_type in CompType:
             output_path: Path = (
                 self.base_dir / config.OUTPUT_DIR_PATH / comparison_type.name
             )

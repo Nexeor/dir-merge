@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 from collections import defaultdict
+from typing import Dict
 
 import utils
 from comparison import Comparison, CompType
@@ -9,8 +10,8 @@ from file import File
 
 class ComparisonIndex:
     def __init__(self, comparison_type: CompType):
-        self.type = comparison_type
-        self.index = defaultdict(list[File])
+        self.type: CompType = comparison_type
+        self.index: Dict = defaultdict(list[File])
 
     def __repr__(self):
         return (
@@ -24,13 +25,15 @@ class ComparisonIndex:
         for key, file_list in self.index.items():
             msg.append(f"Key: {key}\n")
             for file in file_list:
+                file: File
+
                 msg.append(f"\t{file.name} ({file.rel_path})\n")
                 msg.append(f"\t\t{file.abs_path}\n")
         return "".join(msg)
 
     def write_to_file(self, output_dir: Path):
         utils.write_to_file(
-            self.type, output_dir / self.type, str(self), is_timestamped=True
+            self.type, output_dir / self.type.name, str(self), is_timestamped=True
         )
 
     def add_comparison(self, comparison: Comparison):

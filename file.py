@@ -1,7 +1,6 @@
 import hashlib
 
 from pathlib import Path
-from comparison import Comparison, CompType
 
 from utils import make_link
 
@@ -32,29 +31,7 @@ class File:
 
         return "\n".join(msg)
 
-    def compare_to(self, other: "File") -> CompType:
-        if self is other:
-            raise ValueError(f"Attempted to compare file {repr(self)} to itself")
-
-        # Compare traits
-        same_name = self.name == other.name
-        same_path = self.rel_path.parent == other.rel_path.parent
-        same_content = self._compare_content(other)
-
-        # Assign comparison type
-        for comp_type in CompType:
-            traits = comp_type.value
-            if (
-                traits["path"] == same_path
-                and traits["name"] == same_name
-                and traits["content"] == same_content
-            ):
-                return comp_type
-        raise ValueError(
-            f"No valid CompType found for comparison between {repr(self)} and {repr(other)}"
-        )
-
-    def _compare_content(self, other: "File"):
+    def compare_content(self, other: "File"):
         # Quick size check
         if self.size != other.size:
             return False
