@@ -43,6 +43,10 @@ class ComparisonIndex:
             is_timestamped=True,
         )
 
+    def add_file(self, file: File):
+        key_traits = self._get_key_traits(file)
+        self.index[key_traits].append(file)
+
     def add_comparison(self, comparison: Comparison):
         if comparison.comp_type != self.comp_type:
             raise ValueError(

@@ -4,7 +4,6 @@ from typing import List, Dict, Tuple
 from pathlib import Path
 
 import cli
-import utils
 from file import File
 from dir_index import DirIndex
 from comparison_index import ComparisonIndex
@@ -19,7 +18,6 @@ class ComparisonManager:
             self.comparisons[type] = ComparisonIndex(type)
 
         self.comparison_cache: Dict[Tuple[File, File] : Comparison] = defaultdict()
-        self.unique: List[File] = []  # List of "unique" files
 
     def __repr__(self):
         return (
@@ -49,40 +47,43 @@ class ComparisonManager:
             # Test against other files with the same name
             logging.info("Comparing against same name:")
             same_name_files = dir_index.name_index[file.name]
-            # print(same_name_files)
-            found_name_compare = self._compare_group(same_name_files)
-            # print(found_name_compare)
+            name_comparisons = self._compare_file_against_group(file, same_name_files)
+            found_name_compare = self._add_comparisons(name_comparisons)
             if not found_name_compare:
-                logging.info("No same name matches found")
+                logging.info("No same name comparisons found")
 
             # Test against other files with the same size
-            logging.info("Comparing against same size:")
             same_size_files = dir_index.size_index[file.size]
-            print(same_size_files)
-            found_size_compare = self._compare_group(same_size_files)
+            size_comparisons = self._compare_file_against_group(file, same_size_files)
+            found_size_compare = self._add_comparisons(size_comparisons)
             if not found_size_compare:
-                logging.info("No same size matches found")
+                logging.info("No same size comparisons found")
 
+            # If no comparison was found across either groups, mark as unique
             if not found_name_compare and not found_size_compare:
                 logging.info("Unique file")
-                self.unique.append(file)
+                self.comparisons[CompType.UNIQUE].add_file(file)
 
-    def _compare_group(self, file_list):
-        """Compares all unique pairs in a group. Returns True if any comparison was found within the group."""
-        found = False
-        if len(file_list) > 1:
-            for i, file_a in enumerate(file_list):
-                for file_b in file_list[i + 1 :]:
-                    if not (
-                        self.comparison_cache.get((file_a, file_b))
-                        or self.comparison_cache.get((file_b, file_a))
-                    ):
-                        self._compare_files(file_a, file_b)
-                        found = True
-                    else:
-                        logging.info(f"Comparison already cached")
+    def _compare_file_against_group(self, file: File, group: List[File]):
+        comparisons = []
+        for other_file in group:
+            if file is not other_file and not (
+                self.comparison_cache.get((self, other_file))
+                or self.comparison_cache.get((self, other_file))
+            ):
+                new_comparison = file.compare_to(other_file)
+                comparisons.append(new_comparison)
 
-        return found
+        return comparisons
+
+    def _add_comparisons(self, comparisons: List[Comparison]):
+        non_unique_added = False
+        for comparison in comparisons:
+            self.comparison_cache[(comparison.fileA, comparison.fileB)] = comparison
+            if comparison.comp_type != CompType.UNIQUE:
+                non_unique_added = True
+                self.comparisons[comparison.comp_type].add_comparison(comparison)
+        return non_unique_added
 
     def _compare_files(self, file_a: File, file_b: File):
         """Compares two files and caches the result"""
@@ -93,11 +94,14 @@ class ComparisonManager:
         self.comparisons[comparison.comp_type].add_comparison(comparison)
         print(type(self.comparisons[comparison.comp_type]))
         self.comparison_cache[(file_a, file_b)] = comparison
+        return
 
     def resolve_all(self):
         for type in CompType:
             if type == CompType.MATCH:
                 self.resolve_matches()
+            elif type == CompType.UNIQUE:
+                continue
             else:
                 self.resolve_dups(type)
 

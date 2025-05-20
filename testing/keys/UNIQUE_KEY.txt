@@ -1,8 +1,6 @@
-File: unique-test-one.txt
-	Relative Path: diff_path_one\unique-test-one.txt
-	Size: 54
-	View File: file://C%3A/Users/trjji/Documents/Coding%20Projects/obsidian-helpers/testing/test_dirs/test_dir_one/diff_path_one/unique-test-one.txt
-File: unique-test-two.txt
-	Relative Path: diff_path_two\unique-test-two.txt
-	Size: 95
-	View File: file://C%3A/Users/trjji/Documents/Coding%20Projects/obsidian-helpers/testing/test_dirs/test_dir_two/diff_path_two/unique-test-two.txt
+ComparisonIndex: UNIQUE
+Key: ()
+	unique-test-one.txt (diff_path_one\unique-test-one.txt)
+		C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\testing\test_dirs\test_dir_one\diff_path_one\unique-test-one.txt
+	unique-test-two.txt (diff_path_two\unique-test-two.txt)
+		C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\testing\test_dirs\test_dir_two\diff_path_two\unique-test-two.txt
