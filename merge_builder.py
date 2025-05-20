@@ -34,6 +34,8 @@ class MergeBuilder:
 
     def _setup_root(self, target_dir):
         root_path = Path(f"{target_dir}-{utils.get_timestamp()}")
+        logging.info(f"Setting up root at {root_path}")
+
         if root_path.exists():
             msg = f"Aborting build: root directory {root_path} already exists"
             print(msg)
