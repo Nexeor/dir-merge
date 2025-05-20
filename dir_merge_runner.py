@@ -7,6 +7,7 @@ import utils
 import cli
 from dir_index import DirIndex
 from comparison_manager import ComparisonManager
+from merge_builder import MergeBuilder
 
 
 def index_from_prompt():
@@ -27,6 +28,12 @@ def index_from_paths(dir_paths: List[Path]):
     comparison_manager.add_dir_index(index)
     comparison_manager.write_to_file(config.OUTPUT_DIR_PATH)
     comparison_manager.resolve_all()
+
+    merge_builder = MergeBuilder(
+        config.OUTPUT_DIR_PATH / "COMPLETE_MERGES" / "MERGE", comparison_manager
+    )
+    merge_builder.build_merge()
+    merge_builder.write_to_file(config.OUTPUT_DIR_PATH)
 
 
 # Ensure that the output directories exist

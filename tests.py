@@ -34,19 +34,19 @@ class TestUnion(unittest.TestCase):
 
     def test_build_union(self):
         for comparison_type in CompType:
-            output_path: Path = (
-                self.base_dir / config.OUTPUT_DIR_PATH / comparison_type.name
-            )
-            output_path = self._get_most_recent_file(output_path)
-            key_path: Path = (
-                self.base_dir / config.KEY_PATH / f"{comparison_type.name}_KEY.txt"
-            )
-            print(
-                f"Testing {comparison_type.name}\n"
-                f"\tOutput: {utils.make_link(output_path)}\n"
-                f"\tKey: {utils.make_link(key_path)}"
-            )
-            self.assertTrue(self.is_equal(key_path, output_path))
+            self.key_check(comparison_type.name)
+        self.key_check("MERGE")
+
+    def key_check(self, test_file_name):
+        output_path: Path = self.base_dir / config.OUTPUT_DIR_PATH / test_file_name
+        output_path = self._get_most_recent_file(output_path)
+        key_path: Path = self.base_dir / config.KEY_PATH / f"{test_file_name}_KEY.txt"
+        print(
+            f"Testing {test_file_name}\n"
+            f"\tOutput: {utils.make_link(output_path)}\n"
+            f"\tKey: {utils.make_link(key_path)}"
+        )
+        self.assertTrue(self.is_equal(key_path, output_path))
 
     def _get_most_recent_file(self, folder_path: Path) -> Optional[Path]:
         folder = Path(folder_path)
@@ -63,6 +63,7 @@ class TestUnion(unittest.TestCase):
     ):
         # If no file diff returned, then files are equal
         if not utils.make_file_diff(key_path, output_path):
+            print("No diff found")
             return True
 
         return False
