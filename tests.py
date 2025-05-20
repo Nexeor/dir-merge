@@ -4,6 +4,7 @@ from pathlib import Path
 
 import config
 import utils
+from log_config import setup_logging
 from dir_merge_runner import index_from_paths
 from comparison import CompType
 from typing import Optional
@@ -17,6 +18,7 @@ class TestUnion(unittest.TestCase):
     """
 
     def setUp(self):
+        setup_logging()
         self.base_dir = Path(__file__).resolve().parent
 
         self.patcher = patch(

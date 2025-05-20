@@ -31,19 +31,19 @@ class Comparison:
 
     def __repr__(self):
         return (
-            f"Comparison(type={self.type.name}, "
+            f"Comparison(type={self.comp_type.name}, "
             f"fileA={repr(self.fileA)}, "
             f"fileB={repr(self.fileB)})"
         )
 
     def __str__(self):
         return (
-            f"Comparison Type: {self.type.name}\n"
+            f"Comparison Type: {self.comp_type.name}\n"
             f"File A: {self.fileA.name} ({self.fileA.rel_path})\n"
             f"File B: {self.fileB.name} ({self.fileB.rel_path})"
         )
 
-    def compare_files(file_a: File, file_b: File) -> CompType:
+    def compare_files(self, file_a: File, file_b: File) -> CompType:
         if file_a is file_b:
             raise ValueError(f"Attempted to compare file {repr(file_a)} to itself")
 
