@@ -95,7 +95,7 @@ def write_to_file(filename: str, output_dir: Path, msg: str, is_timestamped=Fals
 
     output_path = output_dir / filename
     output_path.parent.mkdir(parents=True, exist_ok=True)
-
+    print(f"Making new output at: {output_path}")
     # Write output
     with open(output_path, "w", encoding="utf-8") as output_file:
         output_file.write(msg)

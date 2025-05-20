@@ -51,13 +51,13 @@ class DirIndex:
             for file in file_list:
                 msg.append(f"\t{str(file)}\n\n")
 
-            # Write the string to the file
-            utils.write_to_file(
-                filename=index_name,
-                output_dir=output_dir / index_name,
-                msg="".join(msg),
-                is_timestamped=True,
-            )
+        # Write the string to the file
+        utils.write_to_file(
+            filename=index_name,
+            output_dir=output_dir / index_name,
+            msg="".join(msg),
+            is_timestamped=True,
+        )
 
     # Add all files in the given directory to this index
     def index_dir(self, base_dir_path, normalize_line_endings=False):
