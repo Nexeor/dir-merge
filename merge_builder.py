@@ -1,13 +1,12 @@
 import logging
 import sys
-import os
 import shutil
+import os
 
 from collections import defaultdict
 from pathlib import Path
 from typing import List, Dict
 
-import cli
 import utils
 from file import File
 from comparison_manager import ComparisonManager
@@ -15,14 +14,13 @@ from comparison_index import ComparisonIndex
 
 
 class MergeBuilder:
-    def __init__(self, target_dir: Path, comparison_manager: ComparisonManager):
+    def __init__(self, comparison_manager: ComparisonManager):
         self.merge: Dict[Path : List[File]] = defaultdict(list)
-        self.build_path = self._setup_root(target_dir)
         self.comparison_manager = comparison_manager
+        self.build_merge()
 
     def __str__(self):
         msg = [f"Merge:\n"]
-        print(self.merge.items())
         for path, file_list in self.merge.items():
             msg.append(f"{path}:\n")
             for file in file_list:
@@ -59,5 +57,14 @@ class MergeBuilder:
                 if type(file_list) == list:
                     for file in file_list:
                         file: File
-                        output_path = Path(self.build_path / file.dir_path)
+                        output_path = Path(file.dir_path)
                         self.merge[output_path].append(file)
+
+    def write_merge_to_disk(self, output_dir):
+        root_path = self._setup_root(output_dir)
+        for path, file_list in self.merge.items():
+            for file in file_list:
+                file: File
+                output_path = Path(root_path / file.rel_path)
+                os.makedirs(output_path.parent, exist_ok=True)
+                shutil.copy2(Path(file.abs_path), Path(output_path))

@@ -63,7 +63,6 @@ class TestUnion(unittest.TestCase):
     ):
         # If no file diff returned, then files are equal
         if not utils.make_file_diff(key_path, output_path):
-            print("No diff found")
             return True
 
         return False

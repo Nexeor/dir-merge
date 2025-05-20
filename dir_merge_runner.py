@@ -29,11 +29,11 @@ def index_from_paths(dir_paths: List[Path]):
     comparison_manager.write_to_file(config.OUTPUT_DIR_PATH)
     comparison_manager.resolve_all()
 
-    merge_builder = MergeBuilder(
-        config.OUTPUT_DIR_PATH / "COMPLETE_MERGES" / "MERGE", comparison_manager
-    )
-    merge_builder.build_merge()
+    merge_builder = MergeBuilder(comparison_manager)
     merge_builder.write_to_file(config.OUTPUT_DIR_PATH)
+    merge_builder.write_merge_to_disk(
+        config.OUTPUT_DIR_PATH / "COMPLETE_MERGES" / "MERGE"
+    )
 
 
 # Ensure that the output directories exist
