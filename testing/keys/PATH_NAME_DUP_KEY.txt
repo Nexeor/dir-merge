@@ -1,4 +1,4 @@
-ComparisonIndex: DIFF (Type: ComparisonResult.DIFF)
+ComparisonIndex: PATH_NAME_DUP
 Key: (WindowsPath('same_path'), 'diff-test.txt')
 	diff-test.txt (same_path\diff-test.txt)
 		C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\testing\test_dirs\test_dir_one\same_path\diff-test.txt
