@@ -25,8 +25,8 @@ def index_from_paths(dir_paths: List[Path]):
 
     comparison_manager = ComparisonManager()
     comparison_manager.add_dir_index(index)
-    comparison_manager.resolve_all()
     comparison_manager.write_to_file(config.OUTPUT_DIR_PATH)
+    comparison_manager.resolve_all()
 
 
 # Ensure that the output directories exist

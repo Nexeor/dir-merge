@@ -10,18 +10,20 @@ from file import File
 
 class ComparisonIndex:
     def __init__(self, comparison_type: CompType):
-        self.type: CompType = comparison_type
+        self.comp_type: CompType = comparison_type
         self.index: Dict[tuple:list] = defaultdict(list[File])
 
     def __repr__(self):
         return (
-            f"ComparisonIndex(name={self.type.name!r}"
+            f"ComparisonIndex(name={self.comp_type.name!r}"
             f"entries={sum(len(v) for v in self.index.values())}, "
             f"keys={len(self.index)})"
         )
 
     def __str__(self):
-        msg = [f"ComparisonIndex: {self.type.name}\n"]
+        msg = [
+            f"ComparisonIndex: {self.comp_type.name}\n",
+        ]
         for key, file_list in self.index.items():
             msg.append(f"Key: {key}\n")
             for file in file_list:
@@ -35,37 +37,40 @@ class ComparisonIndex:
         # print(output_dir)
         # print(self.type.name)
         utils.write_to_file(
-            self.type.name, output_dir / self.type.name, str(self), is_timestamped=True
+            self.comp_type.name,
+            output_dir / self.comp_type.name,
+            str(self),
+            is_timestamped=True,
         )
 
     def add_comparison(self, comparison: Comparison):
-        if comparison.comp_type != self.type:
+        if comparison.comp_type != self.comp_type:
             raise ValueError(
-                f"Attempted to add {comparison.type} to index of {self.type}"
+                f"Attempted to add {comparison.comp_type} to index of {self.comp_type}"
             )
         logging.info(str(comparison))
 
-        key_traits = self._get_key_traits(comparison)
+        key_traits = self._get_key_traits(comparison.fileA)
         for file in [comparison.fileA, comparison.fileB]:
             if file not in self.index[key_traits]:
                 self.index[key_traits].append(file)
 
-    def set_comparisons(self, comparisons: list[Comparison]):
-        if type(comparisons) != list:
-            comparisons = [comparisons]
-        key_comparison = comparisons[0]
-        key_traits = self._get_key_traits(key_comparison)
-        self.index[key_traits] = comparisons
+    def set_comparisons(self, file_list: list[Comparison]):
+        if type(file_list) != list:
+            file_list = [file_list]
+        key_file = file_list[0]
+        key_traits = self._get_key_traits(key_file)
+        self.index[key_traits] = file_list
 
-    def _get_key_traits(self, comparison: Comparison) -> tuple:
+    def _get_key_traits(self, file: File) -> tuple:
         key_traits = []
-        for trait, is_key in comparison.comp_type.value.items():
+        for trait, is_key in self.comp_type.value.items():
             if is_key:
                 match trait:
                     case "path":
-                        key_traits.append(comparison.fileA.rel_path.parent)
+                        key_traits.append(file.rel_path.parent)
                     case "name":
-                        key_traits.append(comparison.fileA.name)
+                        key_traits.append(file.name)
                     case "content":
-                        key_traits.append(comparison.fileA.quick_hash)
+                        key_traits.append(file.quick_hash)
         return tuple(key_traits)

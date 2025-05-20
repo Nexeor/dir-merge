@@ -1,4 +1,4 @@
-ComparisonIndex: NAME_DUP (Type: ComparisonResult.NAME_DUP)
+ComparisonIndex: NAME_DUP
 Key: ('name-dup-test.txt',)
 	name-dup-test.txt (diff_path_one\name-dup-test.txt)
 		C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\testing\test_dirs\test_dir_one\diff_path_one\name-dup-test.txt

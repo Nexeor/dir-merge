@@ -1,5 +1,5 @@
-ComparisonIndex: CONTENT_NAME_DUP (Type: ComparisonResult.CONTENT_NAME_DUP)
-Key: ('7f8505c3c8c942fa9480201a78ca3c28', 'content-name-dup-test.txt')
+ComparisonIndex: CONTENT_NAME_DUP
+Key: ('content-name-dup-test.txt', '7f8505c3c8c942fa9480201a78ca3c28')
 	content-name-dup-test.txt (diff_path_one\content-name-dup-test.txt)
 		C:\Users\trjji\Documents\Coding Projects\obsidian-helpers\testing\test_dirs\test_dir_one\diff_path_one\content-name-dup-test.txt
 	content-name-dup-test.txt (diff_path_two\content-name-dup-test.txt)
