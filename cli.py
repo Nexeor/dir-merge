@@ -58,8 +58,10 @@ class MultiChoiceValidator(Validator):
             raise ValidationError(
                 message=f"Value {user_input} has been selected already"
             )
-        else:
-            self.previous_inputs.add(user_input)
+
+    # Call this method to record the input so it can be checked against future inputs
+    def record_input(self, input):
+        self.previous_inputs.add(input)
 
 
 # Validate that the input is a valid path that exists in the file system
@@ -135,28 +137,34 @@ class UserPrompt:
 
     # Prompt the user to make multiple choices from a list of options
     def prompt_multi_choice(self) -> List[object]:
-        if self.num_choices == len(self.options) and self.min_choices is None:
+        if (
+            self.num_choices == len(self.options)
+            and self.min_choices == self.num_choices
+        ):
             return self.options
 
         selected = []
         local_validator = MultiChoiceValidator(num_options=len(self.options))
-        while len(selected) < self.num_choices and len(selected) < len(
-            self.min_choices
-        ):
+        while len(selected) < self.num_choices and len(selected) < self.min_choices:
             print(f"Choice {len(selected) + 1}")
             try:
                 for i, option in enumerate(self.options):
-                    print(f"\t{i + 1}) {option}")
+                    if option not in selected:
+                        print(f"\t{i + 1}) {option}")
+                    else:
+                        print(f"\t{i + 1}) (selected) {option} ")
                 # If the user has selected enough options, give them "done" option
                 if len(selected) > self.min_choices:
+                    # TODO: Done option non-functional
                     print(f"\t{i + 1}) Done")
                 # Otherwise, prompt them to select more options
                 else:
                     print(
-                        f"Please choose {len(selected) - self.min_choices} more options"
+                        f"Choose at least {self.min_choices - len(selected)} more options"
                     )
                 user_input = int(prompt(">>> ", validator=local_validator))
                 selected.append(self.options[user_input - 1])
+                local_validator.record_input(user_input)
             except ValidationError as e:
                 print(f"\nError: {e}")
 
