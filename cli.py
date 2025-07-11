@@ -8,7 +8,6 @@ from enum import Enum
 
 import utils
 from comparison_index import ComparisonIndex
-from comparison_manager import ComparisonManager
 from comparison import Comparison, CompType
 from file import File
 
@@ -87,7 +86,7 @@ class InputDirValidator(Validator):
             )
 
 
-# Prompt the user to make a single chouce from a list of options
+# Prompt the user to make a single chouce from a list of options and return that option
 def prompt_single_choice(msg: str, options: List[str]) -> str:
     while True:  # Loop until valid input or exit
         try:
@@ -186,18 +185,6 @@ def display_files(msg, file_list: List[File]):
     print("\n".join(msg))
 
 
-def prompt_path_name_dup(manager: ComparisonManager):
-    path_name_index: ComparisonIndex = manager.comparisons[CompType.PATH_NAME_DUP]
-    for key, dup_list in path_name_index.index.items():
-        display_files(
-            "PATH-NAME DUP: Files have the same name and path but have different content",
-            dup_list,
-        )
-
-        prompt_build_diff(dup_list)
-        prompt_keep_options(dup_list, link_paths=True)
-
-
 class DiffViewOptions(Enum):
     DIFF_EDITOR = "Open in diff editor"
     DIFF_UNIFIED = "View unified diff"
@@ -205,6 +192,19 @@ class DiffViewOptions(Enum):
     CONTINUE = "Skip viewing and continue"
 
 
+# Given a list of files, prompt the user to pick a certain number of them
+def prompt_pick_files(msg: str, file_list: List[File], num_files: int):
+    if len(file_list) == num_files:
+        return file_list
+
+    selected_files = prompt_multi_choice(
+        msg=msg, options=file_list, num_choices=num_files
+    )
+
+    return selected_files
+
+
+# Prompt the user to view different diff options for the selected files
 def prompt_build_diff(file_list: List[File]):
     if shutil.which("code") is None:
         print("Need VSCode command-line tool 'code' to view ")
@@ -235,33 +235,33 @@ def prompt_build_diff(file_list: List[File]):
                     )
             case DiffViewOptions.DIFF_UNIFIED:
                 diff_files = prompt_pick_files(
-                    msg="Choose files to open in diff editor",
+                    msg="Choose files to make unified diff",
                     file_list=file_list,
                     num_files=2,
                 )
-                # TODO: Generate unified diff and print it here
-
+                diff_log = utils.make_unified_diff(
+                    diff_files[0].abs_path, diff_files[1].abs_path
+                )
+                for line in diff_log:
+                    print(line)
             case DiffViewOptions.DIFF_SIDE_BY_SIDE:
                 diff_files = prompt_pick_files(
-                    msg="Choose files to open in diff editor",
+                    msg="Choose files to make side-by-side diff",
                     file_list=file_list,
                     num_files=2,
                 )
-                # TODO: Generate side by side diff and print it here
-
+                # TODO: Add native support for side-by-side diff that doesn't use VSCode 'code'
+                if shutil.which("code") is None:
+                    print("Need VSCode cmd-line 'code' to view unified diff")
+                else:
+                    subprocess.run(
+                        [
+                            "diff",
+                            "--new-window",
+                            "--side-by-side",
+                            diff_files[0].abs_path,
+                            diff_files[1].abs_path,
+                        ]
+                    )
             case DiffViewOptions.CONTINUE:
                 comparing = False
-
-
-# Given a list of files, prompt the user to pick a certain number
-def prompt_pick_files(msg: str, file_list: List[File], num_files: int):
-    to_compare: List[File] = file_list
-
-    if len(file_list) == num_files:
-        return file_list
-
-    selected_files = prompt_multi_choice(
-        msg=msg, options=file_list, num_choices=num_files
-    )
-
-    return selected_files
