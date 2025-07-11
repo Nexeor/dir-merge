@@ -20,7 +20,7 @@ def get_relative_to_base_path(base_paths, full_path):
     )
 
 
-# Given two file paths, check if they contain the same content
+# Given two file paths, compare their content and return a diff_log
 def make_file_diff(path_a: Path, path_b: Path) -> Optional[List[str]]:
     diff_log = None
 

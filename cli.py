@@ -1,7 +1,10 @@
+import shutil
+import subprocess
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator, ValidationError
 from typing import List
 from pathlib import Path
+from enum import Enum
 
 import utils
 from comparison_index import ComparisonIndex
@@ -10,7 +13,8 @@ from comparison import Comparison, CompType
 from file import File
 
 
-class UserOptionValidator(Validator):
+# Validate when user has single choice from many options
+class SingleChoiceValidator(Validator):
     def __init__(self, num_options: int):
         self.num_options = num_options
 
@@ -30,6 +34,36 @@ class UserOptionValidator(Validator):
             )
 
 
+# Validate when user has multiple choices from many options
+class MultiChoiceValidator(Validator):
+    def __init__(self, num_options: int):
+        self.num_options = num_options
+        self.previous_inputs = set()
+
+    def validate(self, document):
+        # Check that input is an int
+        user_input = document.text
+        if not user_input.isdigit():
+            raise ValidationError(
+                message="Please enter a number", cursor_position=len(document.text)
+            )
+        # Check that input is valid range
+        user_input = int(user_input)
+        if not (0 < user_input < self.num_options + 1):
+            raise ValidationError(
+                message=f"Value {user_input} is out of range. Must be between 1 and {self.num_options}",
+                cursor_position=len(document.text),
+            )
+        # Check that input has not been selected already
+        if user_input in self.previous_inputs:
+            raise ValidationError(
+                message=f"Value {user_input} has been selected already"
+            )
+        else:
+            self.previous_inputs.add(user_input)
+
+
+# Validate that the input is a valid path that exists in the file system
 class InputDirValidator(Validator):
     def __init__(self):
         self.keywords = ["done", "list"]
@@ -53,7 +87,8 @@ class InputDirValidator(Validator):
             )
 
 
-def prompt_user_options(msg: str, options: List[str]) -> int:
+# Prompt the user to make a single chouce from a list of options
+def prompt_single_choice(msg: str, options: List[str]) -> str:
     while True:  # Loop until valid input or exit
         try:
             # Print the message then the options
@@ -63,17 +98,38 @@ def prompt_user_options(msg: str, options: List[str]) -> int:
 
             # Gather user input and validate
             user_input = int(
-                prompt(">>> ", validator=UserOptionValidator(num_options=len(options)))
+                prompt(
+                    ">>> ", validator=SingleChoiceValidator(num_options=len(options))
+                )
             )
-            return user_input
+            # Return the selected option
+            return options[user_input - 1]
         except ValidationError as e:
             print(f"\nError: {e}")
+
+
+# Prompt the user to make multiple choices from a list of options
+def prompt_multi_choice(msg: str, options: List[str], num_choices: int) -> List[str]:
+    selected = []
+    local_validator = MultiChoiceValidator(num_options=len(options))
+    while len(selected) < num_choices:
+        try:
+            print(f"{msg}")
+            for i, option in enumerate(options):
+                print(f"\t{i + 1}) {option}")
+
+            user_input = int(prompt(">>> ", validator=local_validator))
+            selected.append(options[user_input])
+        except ValidationError as e:
+            print(f"\nError: {e}")
+
+    return selected
 
 
 def prompt_keep_options(file_list: List[File], link_paths=False):
     msg = "Choose how to resolve:"
     options = ["Keep one", "Keep all (system will auto-rename)", "Delete all"]
-    user_choice = prompt_user_options(msg, options)
+    user_choice = prompt_single_choice(msg, options)
     match user_choice:
         case 1:
             msg = "Choose which file to keep"
@@ -81,7 +137,7 @@ def prompt_keep_options(file_list: List[File], link_paths=False):
                 (utils.make_link(file.abs_path) if link_paths else file.abs_path)
                 for file in file_list
             ]
-            user_choice = prompt_user_options(msg, choices)
+            user_choice = prompt_single_choice(msg, choices)
             return file_list[user_choice - 1]
         case 2:
             for i, file in enumerate(file_list):
@@ -141,23 +197,43 @@ def prompt_path_name_dup(manager: ComparisonManager):
         prompt_keep_options(dup_list, link_paths=True)
 
 
+class DiffViewOptions(Enum):
+    DIFF_EDITOR = "Open in diff editor"
+    DIFF_UNIFIED = "View unified diff"
+    DIFF_SIDE_BY_SIDE = "View side-by-side diff"
+    CONTINUE = "Skip viewing and continue"
+
+
 def prompt_build_diff(file_list: List[File]):
+    if shutil.which("code") is None:
+        print("Need VSCode command-line tool 'code' to view ")
     comparing = True
     while comparing:
-        user_choice = prompt_user_options(
-            msg="Would you like to view a line-by-line comparison?",
-            options=["Yes", "No"],
+        user_choice = prompt_single_choice(
+            msg="Would you like to view the files?",
+            options=[option.value for option in DiffViewOptions],
         )
+
         match user_choice:
-            # Generate a line-by-line
-            case 1:
-                diff_log = _build_diff_helper(file_list)
+            case DiffViewOptions.DIFF_EDITOR:
+                if shutil.which("code") is None:
+                    print("Need VSCode cmd-line 'code' to open files")
+                else:
+                    subprocess.run(
+                        [
+                            "code",
+                            "--new-window" "-diff",
+                        ]
+                    )
+            # Continue
+            case 2:
+                diff_log = _build_diff_helper(
+                    file_list,
+                )
                 for line in diff_log:
                     print(line)
                 if len(file_list) == 2:
                     comparing = False
-            # Continue
-            case 2:
                 comparing = False
 
 
@@ -174,7 +250,7 @@ def _build_diff_helper(file_list: List[File]):
                 if diff_file.abs_path not in to_compare
             ]
 
-            user_choice = prompt_user_options(
+            user_choice = prompt_single_choice(
                 msg=f"Choose {'first' if i == 0 else 'second'} file to compare",
                 options=[diff_file.abs_path for diff_file in diff_files],
             )
