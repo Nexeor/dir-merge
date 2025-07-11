@@ -123,5 +123,5 @@ class ComparisonManager:
             cli.display_files(msg=f"Resolving {type.name} dup", file_list=dup_list)
             if not type.value["content"]:
                 cli.prompt_build_diff(dup_list)
-            user_choice = cli.prompt_keep_options(dup_list, link_paths=True)
+            user_choice = cli.prompt_keep_options(dup_list)
             comparison_index.set_comparisons(user_choice)

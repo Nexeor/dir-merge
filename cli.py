@@ -2,7 +2,7 @@ import shutil
 import subprocess
 from prompt_toolkit import prompt
 from prompt_toolkit.validation import Validator, ValidationError
-from typing import List
+from typing import List, Optional
 from pathlib import Path
 from enum import Enum
 
@@ -88,12 +88,20 @@ class InputDirValidator(Validator):
 
 class UserPrompt:
     def __init__(
-        self, msg: str, option_msg: List[str], options: List[object], num_choices: int
+        self,
+        msg: str,
+        option_msg: List[str],
+        options: List[object],
+        num_choices: int,
+        min_choices: Optional[int] = None,
     ):
         self.msg = msg  # Send this message when displaying the prompt
         self.option_msg = option_msg  # List of options to display to the user
         self.options = options  # Option objects to be returned
-        self.num_choices = num_choices  # Number of choices the user can make
+        self.num_choices = num_choices  # Number of total choices the user can make
+        self.min_choices = (
+            num_choices if not min_choices else min_choices
+        )  # Number of choices the user must make
 
     def send_prompt(self):
         # Print message and options
@@ -127,17 +135,26 @@ class UserPrompt:
 
     # Prompt the user to make multiple choices from a list of options
     def prompt_multi_choice(self) -> List[object]:
-        if self.num_choices == len(self.options):
-            return self.options  # If num_choices equals options, return all options
+        if self.num_choices == len(self.options) and self.min_choices is None:
+            return self.options
 
         selected = []
         local_validator = MultiChoiceValidator(num_options=len(self.options))
-        while len(selected) < self.num_choices:
+        while len(selected) < self.num_choices and len(selected) < len(
+            self.min_choices
+        ):
             print(f"Choice {len(selected) + 1}")
             try:
                 for i, option in enumerate(self.options):
                     print(f"\t{i + 1}) {option}")
-
+                # If the user has selected enough options, give them "done" option
+                if len(selected) > self.min_choices:
+                    print(f"\t{i + 1}) Done")
+                # Otherwise, prompt them to select more options
+                else:
+                    print(
+                        f"Please choose {len(selected) - self.min_choices} more options"
+                    )
                 user_input = int(prompt(">>> ", validator=local_validator))
                 selected.append(self.options[user_input - 1])
             except ValidationError as e:
@@ -146,34 +163,8 @@ class UserPrompt:
         return selected
 
 
-class KeepOptions(Enum):
-    KEEP_ONE = "Keep one"
-    KEEP_ALL = "Keep all (system will auto-rename)"
-    DELETE_ALL = "Delete all"
-
-
-def prompt_keep_options(file_list: List[File], link_paths=False):
-
-    user_choice = prompt_single_choice(msg, options)
-    match user_choice:
-        case 1:
-            msg = "Choose which file to keep"
-            choices = [
-                (utils.make_link(file.abs_path) if link_paths else file.abs_path)
-                for file in file_list
-            ]
-            user_choice = prompt_single_choice(msg, choices)
-            return file_list[user_choice - 1]
-        case 2:
-            for i, file in enumerate(file_list):
-                file.name = f"{file.name}_v{i}"
-            return file_list
-        case 3:
-            return []
-
-
+# Prompt the user to input directories for directory indexing
 def prompt_input_dirs() -> List[Path]:
-    """Prompt the user for any number of input dirs to add to the index"""
     input_dirs = []
     validator = InputDirValidator()
 
@@ -203,23 +194,54 @@ def prompt_input_dirs() -> List[Path]:
             print(f"\nError: {e}")
 
 
+class KeepOptions(Enum):
+    KEEP_ONE = "Keep one"
+    KEEP_SOME = "Choose files to keep"
+    KEEP_ALL = "Keep all (system will auto-rename)"
+    DELETE_ALL = "Delete all"
+
+
+# Prompt the user to choose which files to keep from a list of files
+def prompt_keep_options(file_list: List[File]):
+    view_prompt = UserPrompt(
+        msg="Choose which file(s) to keep",
+        option_msg=[option.value for option in KeepOptions],
+        options=[option.name for option in KeepOptions],
+        num_choices=1,
+    )
+    user_choice = view_prompt.send_prompt()
+    match user_choice:
+        case KeepOptions.KEEP_ONE:
+            keep_prompt = UserPrompt(
+                msg="Choose which file to keep",
+                option_msg=[utils.make_link(file.abs_path) for file in file_list],
+                options=file_list,
+                num_choices=1,
+            )
+            return keep_prompt.send_prompt()
+        case KeepOptions.KEEP_SOME:
+            keep_prompt = UserPrompt(
+                msg="Choose which files to keep",
+                option_msg=[utils.make_link(file.abs_path) for file in file_list],
+                options=file_list,
+                num_choices=len(file_list),
+                min_choices=1,  # User may choose one or more files
+            )
+            return keep_prompt.send_prompt()
+        case KeepOptions.KEEP_ALL:
+            # Automatically rename files to avoid duplicates
+            for i, file in enumerate(file_list):
+                file.name = f"{file.name}_v{i}"
+            return file_list
+        case KeepOptions.DELETE_ALL:
+            return []
+
+
 def display_files(msg, file_list: List[File]):
     msg = [msg]
     for i, file in enumerate(file_list, 1):
         msg.append(f"{i}) {str(file)}")
     print("\n".join(msg))
-
-
-# Given a list of files, prompt the user to pick a certain number of them
-def prompt_pick_files(msg: str, file_list: List[File], num_files: int):
-    if len(file_list) == num_files:
-        return file_list
-
-    selected_files = prompt_multi_choice(
-        msg=msg, options=file_list, num_choices=num_files
-    )
-
-    return selected_files
 
 
 class DiffViewOptions(Enum):
@@ -231,7 +253,7 @@ class DiffViewOptions(Enum):
 
 # Prompt the user to view different diff options for the selected files
 def prompt_build_diff(file_list: List[File]):
-    prompt = UserPrompt(
+    view_prompt = UserPrompt(
         msg="Choose how to view the files",
         option_msg=[option.value for option in DiffViewOptions],
         options=[option.name for option in DiffViewOptions],
@@ -239,16 +261,16 @@ def prompt_build_diff(file_list: List[File]):
     )
     comparing = True
     while comparing:
-        user_input = prompt.send_prompt()
+        user_input = view_prompt.send_prompt()
 
         if user_input is not DiffViewOptions.CONTINUE:
-            prompt = UserPrompt(
+            compare_prompt = UserPrompt(
                 msg="Choose files to compare",
                 option_msg=[str(file) for file in file_list],
                 options=file_list,
                 num_choices=2,
             )
-            to_compare: List[File] = prompt.send_prompt()
+            to_compare: List[File] = compare_prompt.send_prompt()
 
         match user_input:
             # TODO: Add alternative options for non-VSCode users
