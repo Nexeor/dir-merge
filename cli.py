@@ -109,17 +109,18 @@ def prompt_single_choice(msg: str, options: List[str]) -> str:
 
 
 # Prompt the user to make multiple choices from a list of options
-def prompt_multi_choice(msg: str, options: List[str], num_choices: int) -> List[str]:
+def prompt_multi_choice(msg: str, options: List[object], num_choices: int) -> List[str]:
     selected = []
     local_validator = MultiChoiceValidator(num_options=len(options))
+    print(f"{msg}")
     while len(selected) < num_choices:
+        print(f"Choice {len(selected) + 1}")
         try:
-            print(f"{msg}")
             for i, option in enumerate(options):
                 print(f"\t{i + 1}) {option}")
 
             user_input = int(prompt(">>> ", validator=local_validator))
-            selected.append(options[user_input])
+            selected.append(options[user_input - 1])
         except ValidationError as e:
             print(f"\nError: {e}")
 
@@ -213,46 +214,54 @@ def prompt_build_diff(file_list: List[File]):
             msg="Would you like to view the files?",
             options=[option.value for option in DiffViewOptions],
         )
-
         match user_choice:
             case DiffViewOptions.DIFF_EDITOR:
+                diff_files = prompt_pick_files(
+                    msg="Choose files to open in diff editor",
+                    file_list=file_list,
+                    num_files=2,
+                )
                 if shutil.which("code") is None:
-                    print("Need VSCode cmd-line 'code' to open files")
+                    print("Need VSCode cmd-line 'code' to open diff editor")
                 else:
                     subprocess.run(
                         [
                             "code",
-                            "--new-window" "-diff",
+                            "--new-window",
+                            "-diff",
+                            diff_files[0].abs_path,
+                            diff_files[1].abs_path,
                         ]
                     )
-            # Continue
-            case 2:
-                diff_log = _build_diff_helper(
-                    file_list,
+            case DiffViewOptions.DIFF_UNIFIED:
+                diff_files = prompt_pick_files(
+                    msg="Choose files to open in diff editor",
+                    file_list=file_list,
+                    num_files=2,
                 )
-                for line in diff_log:
-                    print(line)
-                if len(file_list) == 2:
-                    comparing = False
+                # TODO: Generate unified diff and print it here
+
+            case DiffViewOptions.DIFF_SIDE_BY_SIDE:
+                diff_files = prompt_pick_files(
+                    msg="Choose files to open in diff editor",
+                    file_list=file_list,
+                    num_files=2,
+                )
+                # TODO: Generate side by side diff and print it here
+
+            case DiffViewOptions.CONTINUE:
                 comparing = False
 
 
-# Given a list of files, prompt the user to pick two to generate a diff from
-def _build_diff_helper(file_list: List[File]):
+# Given a list of files, prompt the user to pick a certain number
+def prompt_pick_files(msg: str, file_list: List[File], num_files: int):
     to_compare: List[File] = file_list
 
-    # If file_list has 2 or more items, prompt user for which to choose
-    if len(file_list) > 2:
-        for i in range(2):
-            diff_files = [
-                diff_file
-                for diff_file in file_list
-                if diff_file.abs_path not in to_compare
-            ]
+    if len(file_list) == num_files:
+        return file_list
 
-            user_choice = prompt_single_choice(
-                msg=f"Choose {'first' if i == 0 else 'second'} file to compare",
-                options=[diff_file.abs_path for diff_file in diff_files],
-            )
-            to_compare.append(diff_files[user_choice])
-    return utils.make_file_diff(to_compare[0].abs_path, to_compare[1].abs_path)
+    selected_files = prompt_multi_choice(
+        msg=msg, options=file_list, num_choices=num_files
+    )
+
+    return selected_files

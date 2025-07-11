@@ -21,11 +21,10 @@ def get_relative_to_base_path(base_paths, full_path):
 
 
 # Given two file paths, compare their content and return a diff_log
-def make_file_diff(path_a: Path, path_b: Path) -> Optional[List[str]]:
-    diff_log = None
-
+def make_file_diff(
+    path_a: Path, path_b: Path, side_by_side: bool
+) -> Optional[List[str]]:
     if filecmp.cmp(path_a, path_b, shallow=False):
-        print("Files are the same")
         return None
 
     base_content = path_a.read_text(encoding="utf-8").splitlines(keepends=True)
@@ -35,8 +34,14 @@ def make_file_diff(path_a: Path, path_b: Path) -> Optional[List[str]]:
         difflib.unified_diff(base_content, comp_content, str(path_a), str(path_b))
     )
 
-    print("Files are not the same")
     return diff_log
+
+
+def make_side_by_side_diff(
+    path_a: Path, path_b: Path, side_by_side: bool
+) -> Optional[List[str]]:
+    return None
+    # TODO: Implement side-by-side diff
 
 
 def make_link(path: Path) -> str:
