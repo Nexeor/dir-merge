@@ -92,24 +92,22 @@ class UserPrompt:
     def __init__(
         self,
         msg: str,
-        option_msg: List[str],
-        options: List[object],
+        options: type[Enum],
         num_choices: int,
         min_choices: Optional[int] = None,
     ):
         self.msg = msg  # Send this message when displaying the prompt
-        self.option_msg = option_msg  # List of options to display to the user
-        self.options = options  # Option objects to be returned
-        self.num_choices = num_choices  # Number of total choices the user can make
+        self.option_msg = [
+            option.value for option in options
+        ]  # Message to display to user for each option
+        self.options = options  # Options to choose from as enum members
+        self.num_choices = num_choices  # Total choices the user can make
         self.min_choices = (
             num_choices if not min_choices else min_choices
         )  # Number of choices the user must make
 
     def send_prompt(self):
         # Print message and options
-        print(self.msg)
-        for i, option in enumerate(self.options):
-            print(f"\t{i + 1}) {option}")
 
         # Prompt user for input based on number of choices
         if self.num_choices == 1:
@@ -122,16 +120,21 @@ class UserPrompt:
         Prompt the user to make a single choice from a list of options.
         Returns the selected option.
         """
-        while True:  # Loop until valid input or exit
+        print(self.msg)
+        for i, option in enumerate(self.options):
+            print(f"\t{i + 1}) {option}")
+            if type(option) is File:
+                print(f"\t\tView File: {option.abs_path}")
+
+        while True:  # Loop until valid input
             try:
-                # Calidate user input and return the selected option
                 user_input = int(
                     prompt(
                         ">>> ",
                         validator=SingleChoiceValidator(num_options=len(self.options)),
                     )
                 )
-                return self.options[user_input - 1]
+                return list(self.options)[user_input - 1]
             except ValidationError as e:
                 print(f"\nError: {e}")
 
@@ -141,7 +144,12 @@ class UserPrompt:
             self.num_choices == len(self.options)
             and self.min_choices == self.num_choices
         ):
+            print("No choices to make, returning all options")
             return self.options
+
+        print(self.msg)
+        for i, option in enumerate(self.options):
+            print(f"\t{i + 1}) {option}")
 
         selected = []
         local_validator = MultiChoiceValidator(num_options=len(self.options))
@@ -259,12 +267,17 @@ class DiffViewOptions(Enum):
     CONTINUE = "Skip viewing and continue"
 
 
+def make_file_enum(file_list: List[File]) -> Enum:
+    # Use file names or another unique property as keys
+    members = {f"FILE_{i}": file for i, file in enumerate(file_list)}
+    return Enum("FileEnum", members)
+
+
 # Prompt the user to view different diff options for the selected files
 def prompt_build_diff(file_list: List[File]):
     view_prompt = UserPrompt(
         msg="Choose how to view the files",
-        option_msg=[option.value for option in DiffViewOptions],
-        options=[option.name for option in DiffViewOptions],
+        options=DiffViewOptions,
         num_choices=1,
     )
     comparing = True
@@ -272,28 +285,28 @@ def prompt_build_diff(file_list: List[File]):
         user_input = view_prompt.send_prompt()
 
         if user_input is not DiffViewOptions.CONTINUE:
+            file_enum = make_file_enum(file_list)
             compare_prompt = UserPrompt(
                 msg="Choose files to compare",
-                option_msg=[str(file) for file in file_list],
-                options=file_list,
+                options=file_enum,
                 num_choices=2,
             )
-            to_compare: List[File] = compare_prompt.send_prompt()
-
+            to_compare: List[File] = [
+                file.value for file in compare_prompt.send_prompt()
+            ]
         match user_input:
             # TODO: Add alternative options for non-VSCode users
             case DiffViewOptions.DIFF_EDITOR:
+                print("Opening diff editor...")
                 if shutil.which("code") is None:
                     print("Need VSCode cmd-line 'code' to open diff editor")
                 else:
                     subprocess.run(
-                        [
-                            "code",
-                            "--new-window",
-                            "-diff",
-                            to_compare[0].abs_path,
-                            to_compare[1].abs_path,
-                        ]
+                        'code --new-window --diff "{}" "{}"'.format(
+                            to_compare[0].abs_path.resolve(),
+                            to_compare[1].abs_path.resolve(),
+                        ),
+                        shell=True,
                     )
             case DiffViewOptions.DIFF_UNIFIED:
                 diff_log = utils.make_unified_diff(
