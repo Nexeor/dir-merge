@@ -92,18 +92,41 @@ class UserPrompt:
     def __init__(
         self,
         msg: str,
-        option_msg: List[str],
-        options: List[object],
+        options: List[str],
+        option_msgs: List[str],
         num_choices: int,
         min_choices: Optional[int] = None,
     ):
         self.msg = msg  # Send this message when displaying the prompt
-        self.option_msg = option_msg  # List of options to display to the user
-        self.options = options  # Option objects to be returned
+        self.options = options  # Enum containing options and corresponding messages
+        self.option_msgs = option_msgs  # Messages to display for each option
         self.num_choices = num_choices  # Number of total choices the user can make
         self.min_choices = (
             num_choices if not min_choices else min_choices
         )  # Number of choices the user must make
+
+    @classmethod
+    def from_enum(
+        cls,
+        msg: str,
+        options: Enum,
+        num_choices: int,
+        min_choices: Optional[int] = None,
+    ):
+        option_msgs = [option.name for option in options]
+        options = [option.value for option in options]
+        return cls(msg, options, option_msgs, num_choices, min_choices)
+
+    @classmethod
+    def from_list(
+        cls,
+        msg: str,
+        options: List[str],
+        option_msgs: List[str],
+        num_choices: int,
+        min_choices: Optional[int] = None,
+    ):
+        return cls(msg, options, option_msgs, num_choices, min_choices)
 
     def send_prompt(self):
         # Print message and options
@@ -131,16 +154,18 @@ class UserPrompt:
                         validator=SingleChoiceValidator(num_options=len(self.options)),
                     )
                 )
-                return self.options[user_input - 1]
+                print(list(self.options)[user_input - 1])
+                return list(self.options)[user_input - 1]
             except ValidationError as e:
                 print(f"\nError: {e}")
 
     # Prompt the user to make multiple choices from a list of options
     def prompt_multi_choice(self) -> List[object]:
         if (
-            self.num_choices == len(self.options)
+            self.num_choices <= len(self.options)
             and self.min_choices == self.num_choices
         ):
+            print("Only one choice can be made, using single choice prompt")
             return self.options
 
         selected = []
@@ -213,8 +238,7 @@ class KeepOptions(Enum):
 def prompt_keep_options(file_list: List[File]):
     view_prompt = UserPrompt(
         msg="Choose which file(s) to keep",
-        option_msg=[option.value for option in KeepOptions],
-        options=[option.name for option in KeepOptions],
+        options=KeepOptions,
         num_choices=1,
     )
     user_choice = view_prompt.send_prompt()
@@ -261,20 +285,20 @@ class DiffViewOptions(Enum):
 
 # Prompt the user to view different diff options for the selected files
 def prompt_build_diff(file_list: List[File]):
-    view_prompt = UserPrompt(
+    view_prompt = UserPrompt.from_enum(
         msg="Choose how to view the files",
-        option_msg=[option.value for option in DiffViewOptions],
-        options=[option.name for option in DiffViewOptions],
+        options=DiffViewOptions,
         num_choices=1,
     )
     comparing = True
     while comparing:
         user_input = view_prompt.send_prompt()
+        print(f"You chose: {user_input}")
 
         if user_input is not DiffViewOptions.CONTINUE:
-            compare_prompt = UserPrompt(
+            compare_prompt = UserPrompt.from_list(
                 msg="Choose files to compare",
-                option_msg=[str(file) for file in file_list],
+                option_msgs=[str(file) for file in file_list],
                 options=file_list,
                 num_choices=2,
             )
@@ -286,6 +310,7 @@ def prompt_build_diff(file_list: List[File]):
                 if shutil.which("code") is None:
                     print("Need VSCode cmd-line 'code' to open diff editor")
                 else:
+                    print("Opening diff editor...")
                     subprocess.run(
                         [
                             "code",
