@@ -85,9 +85,7 @@ def prompt_keep_options(file_list: List[File]):
         min_choices=0,
         max_choices=len(file_list),
     )
-    res = view_prompt.send_prompt()
-    print(res)
-    return res
+    return view_prompt.send_prompt()
 
 
 def display_files(msg, file_list: List[File]):

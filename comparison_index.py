@@ -60,11 +60,14 @@ class ComparisonIndex:
                 self.index[key_traits].append(file)
 
     def set_comparisons(self, file_list: list[Comparison]):
-        if type(file_list) != list:
+        if not isinstance(file_list, list):
             file_list = [file_list]
         key_file = file_list[0]
         key_traits = self._get_key_traits(key_file)
         self.index[key_traits] = file_list
+
+    def remove_comparisons(self, file: File):
+        del self.index[self._get_key_traits(file)]
 
     def _get_key_traits(self, file: File) -> tuple:
         key_traits = []
