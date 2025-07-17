@@ -1,73 +1,11 @@
 import shutil
 import subprocess
-import questionary
-from typing import List, Optional
-from pathlib import Path
-from enum import Enum, EnumMeta
+from typing import List
+from enum import Enum
 
 import utils
-from comparison_index import ComparisonIndex
-from comparison import Comparison, CompType
 from file import File
-
-
-# Prompt to display to the user when they must make one choice from a list of options
-class SelectSinglePrompt:
-    def __init__(self, msg: str, options: EnumMeta | dict):
-        print(type(options))
-        if isinstance(options, EnumMeta):
-            options = [questionary.Choice(title=opt.name, value=opt) for opt in options]
-        else:
-            options = [
-                questionary.Choice(title=key, value=value)
-                for key, value in options.items()
-            ]
-        self.question = questionary.select(message=msg, choices=options)
-
-    def send_prompt(self):
-        user_selection = self.question.ask()
-
-        return user_selection
-
-
-# Prompt to display to user when they must make one or more choices from a list of options
-class SelectMultiPrompt:
-    def __init__(
-        self,
-        msg: str,
-        options: EnumMeta | dict,
-        min_choices: int,
-        max_choices: int,
-    ):
-        self.min_choices = min_choices
-        self.max_choices = max_choices
-        if isinstance(options, EnumMeta):
-            options = [questionary.Choice(title=opt.name, value=opt) for opt in options]
-        else:
-            options = [
-                questionary.Choice(title=key, value=value)
-                for key, value in options.items()
-            ]
-        self.question = questionary.checkbox(message=msg, choices=options)
-
-    def send_prompt(self):
-        # Ask prompt until valid number of selections are chosen
-        while True:
-            user_selection = self.question.ask()
-
-            if (
-                self.min_choices == self.max_choices
-                and len(user_selection) != self.min_choices
-            ):
-                print(f"Please select {self.min_choices} options")
-                continue
-            if len(user_selection) < self.min_choices:
-                print(f"Please select at least {self.min_choices} option(s)")
-                continue
-            if len(user_selection) > self.max_choices:
-                print(f"Please select at most {self.max_choices} option(s)")
-                continue
-            return user_selection
+from prompts import SelectSinglePrompt, SelectMultiPrompt
 
 
 def make_file_options(file_list: List[File]) -> dict[str:File]:
@@ -75,6 +13,13 @@ def make_file_options(file_list: List[File]) -> dict[str:File]:
         f"File {i + 1}: {file.rel_path} \n            {file.get_link()}": file
         for i, file in enumerate(file_list)
     }
+
+
+def display_files(msg, file_list: List[File]):
+    msg = [msg]
+    for i, file in enumerate(file_list, 1):
+        msg.append(f"{i}) {str(file)}")
+    print("\n".join(msg))
 
 
 # Prompt the user to choose which files to keep from a list of files
@@ -86,13 +31,6 @@ def prompt_keep_options(file_list: List[File]):
         max_choices=len(file_list),
     )
     return view_prompt.send_prompt()
-
-
-def display_files(msg, file_list: List[File]):
-    msg = [msg]
-    for i, file in enumerate(file_list, 1):
-        msg.append(f"{i}) {str(file)}")
-    print("\n".join(msg))
 
 
 class DiffViewOptions(Enum):
