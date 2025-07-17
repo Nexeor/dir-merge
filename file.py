@@ -2,6 +2,7 @@ import hashlib
 from pathlib import Path
 
 from utils import make_link
+from urllib.parse import quote
 from comparison import Comparison, CompType
 
 
@@ -30,6 +31,23 @@ class File:
         ]
 
         return "\n".join(msg)
+
+    def get_link(self) -> str:
+        # Resolve the absolute path
+        abs_path = self.abs_path.resolve()
+
+        # Convert to URI-compliant format
+        # On Windows, need to add an extra slash: file:///C:/Users/...
+        # On POSIX, file:///home/user/...
+        if abs_path.is_absolute():
+            path_str = abs_path.as_posix()  # Converts backslashes to forward slashes
+            return (
+                f"file:///{quote(path_str)}"
+                if Path().anchor
+                else f"file://{quote(path_str)}"
+            )
+        else:
+            raise ValueError("Path must be absolute to create a file link.")
 
     def compare_to(self, other: "File") -> Comparison:
         if self is other:
