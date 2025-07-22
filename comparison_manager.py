@@ -117,11 +117,19 @@ class ComparisonManager:
 
     def resolve_dups(self, type: CompType):
         comparison_index: ComparisonIndex = self.comparisons[type]
+        to_remove = []
         for key, dup_list in comparison_index.index.items():
             logging.info(f"Resolving {type.name} dup: {repr(dup_list)}")
 
             cli.display_files(msg=f"Resolving {type.name} dup", file_list=dup_list)
             if not type.value["content"]:
                 cli.prompt_build_diff(dup_list)
-            user_choice = cli.prompt_keep_options(dup_list, link_paths=True)
-            comparison_index.set_comparisons(user_choice)
+
+            user_choice = cli.prompt_keep_options(dup_list)
+            if len(user_choice) == 0:
+                to_remove.append(dup_list[0])
+            else:
+                comparison_index.set_comparisons(user_choice)
+
+        for file in to_remove:
+            comparison_index.remove_comparisons(file)
